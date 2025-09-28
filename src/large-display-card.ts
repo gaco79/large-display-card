@@ -97,7 +97,7 @@ class LargeDisplayCard extends HTMLElement {
   private loadedFonts = new Set<string>();
 
   // --- new debounce state for setConfig ---
-  private pendingConfig: any = null;
+  private pendingConfig = null;
   private setConfigTimer: number | null = null;
   private readonly SET_CONFIG_DEBOUNCE_MS = 400;
   // --- end new debounce state ---
