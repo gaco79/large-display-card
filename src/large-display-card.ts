@@ -96,6 +96,12 @@ class LargeDisplayCard extends HTMLElement {
   /** Track loaded fonts to avoid duplicate loading */
   private loadedFonts = new Set<string>();
 
+  // --- new debounce state for setConfig ---
+  private pendingConfig: any = null;
+  private setConfigTimer: number | null = null;
+  private readonly SET_CONFIG_DEBOUNCE_MS = 400;
+  // --- end new debounce state ---
+
   /**
    * Load a font if it's not already loaded and is in the font registry
    */
@@ -396,11 +402,36 @@ class LargeDisplayCard extends HTMLElement {
     return out;
   }
 
+  shouldUpdate() {
+    return true;
+  }
+
   /**
    * Set the configuration for the card.
-   * @param config
+   * Debounced to avoid rapid repeated merges/errors while editing YAML.
    */
   setConfig(config) {
+    // store the latest requested config and debounce applying it
+    this.pendingConfig = config;
+
+    if (this.setConfigTimer !== null) {
+      window.clearTimeout(this.setConfigTimer);
+    }
+
+    this.setConfigTimer = window.setTimeout(() => {
+      try {
+        this._applyConfig(this.pendingConfig);
+      } finally {
+        this.setConfigTimer = null;
+        this.pendingConfig = null;
+      }
+    }, this.SET_CONFIG_DEBOUNCE_MS);
+  }
+
+  /**
+   * Apply configuration immediately (extracted from previous synchronous setConfig).
+   */
+  private _applyConfig(config) {
     this.config = this.deepMerge(DEFAULT_CONFIG, config || {});
     // initialize shadowConfig as a clone so templates can be re-rendered into it
     this.shadowConfig = this.deepMerge({}, this.config);
