@@ -46,6 +46,44 @@ unit_of_measurement:
   display: false
 ```
 
+#### Card Background Configuration
+
+The card supports flexible background styling through two configuration options:
+
+**`card.background`** (Recommended) - Accepts any valid CSS background value and supports Home Assistant templating:
+
+```YAML
+# Solid color background
+type: custom:large-display-card
+card:
+  background: "#ff5722"
+
+# Gradient background  
+type: custom:large-display-card
+card:
+  background: "linear-gradient(45deg, #2196F3, #21CBF3)"
+
+# Template-based background (changes based on entity state)
+type: custom:large-display-card
+card:
+  background: >
+    {% if states('sensor.temperature') | float > 25 %}
+      linear-gradient(45deg, #f44336, #ff9800)
+    {% else %}
+      linear-gradient(45deg, #2196F3, #03DAC6)
+    {% endif %}
+```
+
+**`card.color`** (Legacy) - Used only when `card.background` is not specified. Creates a solid gradient:
+
+```YAML
+type: custom:large-display-card
+card:
+  color: red  # Creates: linear-gradient(135deg, red, red)
+```
+
+**Note:** `card.color2` has been removed. For gradient backgrounds, use `card.background` with CSS gradient syntax.
+
 #### Font Configuration
 
 The card supports custom fonts for both the number and unit of measurement. Fonts are loaded dynamically only when needed.
@@ -93,7 +131,7 @@ You can also specify any system font or custom font name. For Google Fonts not i
 
 | Name                    |  Type  |                      Default                      | Description |
 | ----------------------- | :----: | :-----------------------------------------------: | ----------- |
-| `card`                  | object |   `{ color: null, color2: null }`               | Card styling options |
+| `card`                  | object |   `{ color: null, background: null }`           | Card styling options |
 | `number`                | object |   `{ size: 48, color: '#FFFFFF', font_weight: 'bold', decimals: 1, font_family: 'Home Assistant' }` | Number display options |
 | `number.font_family`    | string |   `'Home Assistant'`                            | Font family for the number |
 | `unit_of_measurement`   | object |   `{ display: true, as_prefix: false, size: 24, color: '#FFFFFF', font_weight: 'normal', font_family: 'Home Assistant' }` | Unit display options |

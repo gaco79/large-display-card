@@ -26,7 +26,7 @@ import { DEFAULT_CONFIG, FONT_REGISTRY } from './const';
  *   entity_id: "sensor.temperature",
  *   number: { size: 48, font_weight: "700", color: "#fff" },
  *   unit_of_measurement: { display: true, size: 14, as_prefix: false, color: "#eee" },
- *   card: { color: "#2196F3", color2: "#21CBF3" }
+ *   card: { background: "linear-gradient(135deg,#2196F3,#21CBF3)" }
  * }
  *
  * Properties
@@ -95,6 +95,12 @@ class LargeDisplayCard extends HTMLElement {
 
   /** Track loaded fonts to avoid duplicate loading */
   private loadedFonts = new Set<string>();
+
+  // --- new debounce state for setConfig ---
+  private pendingConfig = null;
+  private setConfigTimer: number | null = null;
+  private readonly SET_CONFIG_DEBOUNCE_MS = 400;
+  // --- end new debounce state ---
 
   /**
    * Load a font if it's not already loaded and is in the font registry
@@ -188,7 +194,7 @@ class LargeDisplayCard extends HTMLElement {
   }
 
   /**
-   * If card.color is a template, render it via hass.callApi and update shadowConfig.card.color.
+  * If card.background is a template, render it via hass.callApi and update shadowConfig.
    */
   private async applyCardTemplateColor() {
     // ensure config/card present
@@ -203,7 +209,7 @@ class LargeDisplayCard extends HTMLElement {
     }
 
     const cardCfg = this.config.card || {};
-    const keys = ['color', 'color2'];
+    const keys = ['background'];
 
     for (const key of keys) {
       const tpl = cardCfg[key];
@@ -237,7 +243,7 @@ class LargeDisplayCard extends HTMLElement {
     }
 
     // debug
-    // console.log("large-display-card: shadow card colors", this.shadowConfig.card.color, this.shadowConfig.card.color2);
+    // console.log("large-display-card: shadow card config", this.shadowConfig.card.background);
   }
 
   /**
@@ -286,17 +292,16 @@ class LargeDisplayCard extends HTMLElement {
   }
 
   updateNumberDisplay(state_display_text, unit_of_measurement_text) {
-    // apply card gradient using shadowConfig (rendered values) if available
+    // apply card background using shadowConfig (rendered values) if available
     const shadowCard =
       this.shadowConfig && this.shadowConfig.card
         ? this.shadowConfig.card
         : this.config && this.config.card
           ? this.config.card
           : {};
-    if (shadowCard && shadowCard.color) {
-      // use shadow values (rendered templates or static values)
-      // console.log("large-display-card: applying card colors", shadowCard.color, shadowCard.color2);
-      this.card.style.background = `linear-gradient(135deg, ${shadowCard.color}, ${shadowCard.color2 || shadowCard.color})`;
+    // Use card.background if available. Background supports any valid CSS background value
+    if (shadowCard && shadowCard.background) {
+      this.card.style.background = shadowCard.background;
     }
 
     // Load fonts if needed
@@ -391,11 +396,36 @@ class LargeDisplayCard extends HTMLElement {
     return out;
   }
 
+  shouldUpdate() {
+    return true;
+  }
+
   /**
    * Set the configuration for the card.
-   * @param config
+   * Debounced to avoid rapid repeated merges/errors while editing YAML.
    */
   setConfig(config) {
+    // store the latest requested config and debounce applying it
+    this.pendingConfig = config;
+
+    if (this.setConfigTimer !== null) {
+      window.clearTimeout(this.setConfigTimer);
+    }
+
+    this.setConfigTimer = window.setTimeout(() => {
+      try {
+        this._applyConfig(this.pendingConfig);
+      } finally {
+        this.setConfigTimer = null;
+        this.pendingConfig = null;
+      }
+    }, this.SET_CONFIG_DEBOUNCE_MS);
+  }
+
+  /**
+   * Apply configuration immediately (extracted from previous synchronous setConfig).
+   */
+  private _applyConfig(config) {
     this.config = this.deepMerge(DEFAULT_CONFIG, config || {});
     // initialize shadowConfig as a clone so templates can be re-rendered into it
     this.shadowConfig = this.deepMerge({}, this.config);

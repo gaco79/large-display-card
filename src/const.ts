@@ -17,7 +17,7 @@ export const DEFAULT_CONFIG = {
     font_weight: 'normal',
     font_family: 'Home Assistant',
   },
-  card: { color: null, color2: null },
+  card: { color: null, background: null },
 };
 
 // Font registry for predefined Google Fonts
