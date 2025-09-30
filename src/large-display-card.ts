@@ -327,6 +327,7 @@ class LargeDisplayCard extends HTMLElement {
       'slide-horizontal': { out: 'animate-slide-out-left', in: 'animate-slide-in-right' },
       'slide-vertical': { out: 'animate-slide-out-up', in: 'animate-slide-in-up' },
       zoom: { out: 'animate-zoom-out', in: 'animate-zoom-in' },
+      stretch: { out: 'animate-stretch-out', in: 'animate-stretch-in' },
     };
 
     const animations = animationMap[animationType];

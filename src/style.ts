@@ -121,6 +121,45 @@ const style = css`
     }
   }
 
+  /* Stretch animations: stretch horizontally while fading out, then shrink back and fade in */
+  @keyframes stretchOut {
+    from {
+      transform: scaleX(1);
+      transform-origin: center;
+      opacity: 1;
+      filter: blur(0px);
+    }
+    50% {
+      transform: scaleX(1.6);
+      opacity: 0.6;
+      filter: blur(1px);
+    }
+    to {
+      transform: scaleX(1.6);
+      opacity: 0;
+      filter: blur(4px);
+    }
+  }
+
+  @keyframes stretchIn {
+    from {
+      transform: scaleX(1.6);
+      transform-origin: center;
+      opacity: 0;
+      filter: blur(4px);
+    }
+    50% {
+      transform: scaleX(1.2);
+      opacity: 0.6;
+      filter: blur(1px);
+    }
+    to {
+      transform: scaleX(1);
+      opacity: 1;
+      filter: blur(0px);
+    }
+  }
+
   /* Animation classes */
   .animate-fade-out {
     animation: fadeOut 0.3s ease-out forwards;
@@ -152,6 +191,14 @@ const style = css`
 
   .animate-zoom-in {
     animation: zoomIn 0.3s ease-in forwards;
+  }
+
+  .animate-stretch-out {
+    animation: stretchOut 0.35s ease-out forwards;
+  }
+
+  .animate-stretch-in {
+    animation: stretchIn 0.35s ease-in forwards;
   }
 `;
 
