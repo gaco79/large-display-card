@@ -26,7 +26,7 @@ import { DEFAULT_CONFIG, FONT_REGISTRY } from './const';
  *   entity_id: "sensor.temperature",
  *   number: { size: 48, font_weight: "700", color: "#fff" },
  *   unit_of_measurement: { display: true, size: 14, as_prefix: false, color: "#eee" },
- *   card: { color: "#2196F3", color2: "#21CBF3" }
+ *   card: { background: "linear-gradient(135deg,#2196F3,#21CBF3)" }
  * }
  *
  * Properties
@@ -194,7 +194,7 @@ class LargeDisplayCard extends HTMLElement {
   }
 
   /**
-   * If card.color or card.background is a template, render it via hass.callApi and update shadowConfig.
+  * If card.background is a template, render it via hass.callApi and update shadowConfig.
    */
   private async applyCardTemplateColor() {
     // ensure config/card present
@@ -209,7 +209,7 @@ class LargeDisplayCard extends HTMLElement {
     }
 
     const cardCfg = this.config.card || {};
-    const keys = ['color', 'background'];
+    const keys = ['background'];
 
     for (const key of keys) {
       const tpl = cardCfg[key];
@@ -243,7 +243,7 @@ class LargeDisplayCard extends HTMLElement {
     }
 
     // debug
-    // console.log("large-display-card: shadow card config", this.shadowConfig.card.color, this.shadowConfig.card.background);
+    // console.log("large-display-card: shadow card config", this.shadowConfig.card.background);
   }
 
   /**
@@ -299,15 +299,9 @@ class LargeDisplayCard extends HTMLElement {
         : this.config && this.config.card
           ? this.config.card
           : {};
-
-    // Use card.background if available, otherwise fall back to card.color gradient
+    // Use card.background if available. Background supports any valid CSS background value
     if (shadowCard && shadowCard.background) {
-      // use background value directly - supports any CSS background value
       this.card.style.background = shadowCard.background;
-    } else if (shadowCard && shadowCard.color) {
-      // fallback to legacy color gradient behavior for backward compatibility
-      // Note: color2 is no longer supported, use color for solid background
-      this.card.style.background = `linear-gradient(135deg, ${shadowCard.color}, ${shadowCard.color})`;
     }
 
     // Load fonts if needed
