@@ -113,6 +113,12 @@ class LargeDisplayCard extends HTMLElement {
     const styleSheet = document.createElement('style');
     styleSheet.textContent = style.cssText;
     shadowRoot.appendChild(styleSheet);
+
+    // Ensure we always have a sane config immediately so hass updates before setConfig don't crash.
+    // Use deepMerge to clone DEFAULT_CONFIG into this.config/shadowConfig.
+    // ...deepMerge is defined later on the prototype, calling it here is safe.
+    this.config = this.deepMerge({}, DEFAULT_CONFIG);
+    this.shadowConfig = this.deepMerge({}, this.config);
   }
 
   /**
@@ -350,20 +356,28 @@ class LargeDisplayCard extends HTMLElement {
   }
 
   updateNumberDisplay(state_display_text, unit_of_measurement_text) {
+    // Use local config references with safe fallbacks to DEFAULT_CONFIG to avoid
+    // reading properties of undefined if this.config wasn't set yet.
+    const cfg = this.config || DEFAULT_CONFIG;
+    const cfgNumber = (cfg && cfg.number) ? cfg.number : DEFAULT_CONFIG.number;
+    const uomCfg = (cfg && cfg.unit_of_measurement) ? cfg.unit_of_measurement : DEFAULT_CONFIG.unit_of_measurement;
+
     // apply card background using shadowConfig (rendered values) if available
     const shadowCard =
-      this.shadowConfig && this.shadowConfig.card
+      (this.shadowConfig && this.shadowConfig.card)
         ? this.shadowConfig.card
-        : this.config && this.config.card
-          ? this.config.card
+        : (cfg && cfg.card)
+          ? cfg.card
           : {};
     // Use card.background if available. Background supports any valid CSS background value
     if (shadowCard && shadowCard.background) {
-      this.card.style.background = shadowCard.background;
+      if (this.card) {
+        this.card.style.background = shadowCard.background;
+      }
     }
 
     // Load fonts if needed
-    const numberFontFamily = this.config.number.font_family || DEFAULT_CONFIG.number.font_family;
+    const numberFontFamily = cfgNumber.font_family || DEFAULT_CONFIG.number.font_family;
     this.loadFont(numberFontFamily);
 
     // ensure number span
@@ -377,7 +391,7 @@ class LargeDisplayCard extends HTMLElement {
     // Check if value changed and animation is configured
     const valueChanged =
       this.previousDisplayValue !== null && this.previousDisplayValue !== state_display_text;
-    const animationType = this.config.animation;
+    const animationType = cfg.animation;
 
     if (valueChanged && animationType && animationType !== 'none') {
       // Apply animation
@@ -390,9 +404,9 @@ class LargeDisplayCard extends HTMLElement {
     // Update previous value
     this.previousDisplayValue = state_display_text;
 
-    number.style.fontSize = this.config.number.size + 'px';
-    number.style.fontWeight = this.config.number.font_weight;
-    number.style.color = this.config.number.color;
+    number.style.fontSize = (cfgNumber.size ?? DEFAULT_CONFIG.number.size) + 'px';
+    number.style.fontWeight = cfgNumber.font_weight ?? DEFAULT_CONFIG.number.font_weight;
+    number.style.color = cfgNumber.color ?? DEFAULT_CONFIG.number.color;
     number.style.fontFamily =
       numberFontFamily === 'Home Assistant'
         ? 'var(--ha-card-header-font-family, inherit)'
@@ -404,8 +418,6 @@ class LargeDisplayCard extends HTMLElement {
     }
 
     // handle unit if displayed (guard in case unit_of_measurement is missing or null)
-    const uomCfg =
-      this.config && this.config.unit_of_measurement ? this.config.unit_of_measurement : null;
     if (uomCfg && uomCfg.display) {
       // Load font for unit if different from number font
       const unitFontFamily = uomCfg.font_family || DEFAULT_CONFIG.unit_of_measurement.font_family;
@@ -420,11 +432,11 @@ class LargeDisplayCard extends HTMLElement {
 
       unit_of_measurement_element.textContent = unit_of_measurement_text;
       unit_of_measurement_element.style.fontSize =
-        (uomCfg.size || DEFAULT_CONFIG.unit_of_measurement.size) + 'px';
+        (uomCfg.size ?? DEFAULT_CONFIG.unit_of_measurement.size) + 'px';
       unit_of_measurement_element.style.fontWeight =
-        uomCfg.font_weight || DEFAULT_CONFIG.unit_of_measurement.font_weight;
+        uomCfg.font_weight ?? DEFAULT_CONFIG.unit_of_measurement.font_weight;
       unit_of_measurement_element.style.color =
-        uomCfg.color || DEFAULT_CONFIG.unit_of_measurement.color;
+        uomCfg.color ?? DEFAULT_CONFIG.unit_of_measurement.color;
       unit_of_measurement_element.style.fontFamily =
         unitFontFamily === 'Home Assistant'
           ? 'var(--ha-card-header-font-family, inherit)'
