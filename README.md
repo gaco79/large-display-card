@@ -125,12 +125,54 @@ unit_of_measurement:
 **Custom Fonts:**
 You can also specify any system font or custom font name. For Google Fonts not in the predefined list, ensure they are loaded elsewhere in your Home Assistant setup.
 
+#### Animation Configuration
+
+The card supports animated transitions when the displayed value changes. Configure the `animation` key to specify the type of transition:
+
+**Available Animation Types:**
+- `none` or not specified - No animation (default, instant value change)
+- `fade` - Fade out old value, fade in new value
+- `slide-horizontal` - Slide out horizontally to the left, slide in new value from the right
+- `slide-vertical` - Slide up old value, slide down new value
+- `zoom` - Zoom blur effect (zoom out old value with blur, zoom in new value)
+
+**Usage Examples:**
+
+```YAML
+# Fade animation
+type: custom:large-display-card
+entity_id: sensor.temperature
+animation: fade
+number:
+  size: 64
+```
+
+```YAML
+# Horizontal slide animation
+type: custom:large-display-card
+entity_id: sensor.power
+animation: slide-horizontal
+```
+
+```YAML
+# No animation (default behavior)
+type: custom:large-display-card
+entity_id: sensor.humidity
+# animation not specified or set to null
+```
+
+**Notes:**
+- Animations only trigger when the **displayed** value changes (after rounding/formatting)
+- If the entity state changes but the displayed value remains the same, no animation occurs
+- Each animation completes in 0.3 seconds (300ms)
+
 **Configuration Options:**
 
 **Configuration Options:**
 
 | Name                    |  Type  |                      Default                      | Description |
 | ----------------------- | :----: | :-----------------------------------------------: | ----------- |
+| `animation`             | string |   `null`                                         | Animation type for value changes. Options: `none`, `fade`, `slide-horizontal`, `slide-vertical`, `zoom` |
 | `card`                  | object |   `{ color: null, background: null }`           | Card styling options |
 | `number`                | object |   `{ size: 48, color: '#FFFFFF', font_weight: 'bold', decimals: 1, font_family: 'Home Assistant' }` | Number display options |
 | `number.font_family`    | string |   `'Home Assistant'`                            | Font family for the number |

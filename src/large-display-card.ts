@@ -1,6 +1,7 @@
 import { version } from '../package.json';
 import { customElement } from 'lit/decorators.js';
 import { DEFAULT_CONFIG, FONT_REGISTRY } from './const';
+import style from './style';
 
 /**
  * Large Display Card
@@ -96,11 +97,23 @@ class LargeDisplayCard extends HTMLElement {
   /** Track loaded fonts to avoid duplicate loading */
   private loadedFonts = new Set<string>();
 
+  /** Track previous displayed value to detect changes */
+  private previousDisplayValue: string | null = null;
+
   // --- new debounce state for setConfig ---
   private pendingConfig = null;
   private setConfigTimer: number | null = null;
   private readonly SET_CONFIG_DEBOUNCE_MS = 400;
   // --- end new debounce state ---
+
+  constructor() {
+    super();
+    // Attach shadow DOM and add styles
+    const shadowRoot = this.attachShadow({ mode: 'open' });
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = style.cssText;
+    shadowRoot.appendChild(styleSheet);
+  }
 
   /**
    * Load a font if it's not already loaded and is in the font registry
@@ -194,7 +207,7 @@ class LargeDisplayCard extends HTMLElement {
   }
 
   /**
-  * If card.background is a template, render it via hass.callApi and update shadowConfig.
+   * If card.background is a template, render it via hass.callApi and update shadowConfig.
    */
   private async applyCardTemplateColor() {
     // ensure config/card present
@@ -270,7 +283,9 @@ class LargeDisplayCard extends HTMLElement {
     this.numberEl = numberBox;
 
     this.card.appendChild(numberBox);
-    this.appendChild(this.card);
+    if (this.shadowRoot) {
+      this.shadowRoot.appendChild(this.card);
+    }
 
     this.content = this.card;
   }
@@ -278,6 +293,11 @@ class LargeDisplayCard extends HTMLElement {
   async updateContent() {
     // compute display text from hass + config
     const { state_display_text, unit_of_measurement_text } = this.computeDisplayTexts();
+
+    // Check if we should update (value changed)
+    if (!this.shouldUpdate()) {
+      return;
+    }
 
     // evaluate templates in card color if needed (may update shadowConfig.card.color)
     await this.applyCardTemplateColor();
@@ -289,6 +309,44 @@ class LargeDisplayCard extends HTMLElement {
     if (this.numberEl) {
       this.updateNumberDisplay(state_display_text, unit_of_measurement_text);
     }
+  }
+
+  /**
+   * Animate the value change using CSS animations
+   */
+  private animateValueChange(element: Element, newValue: string, animationType: string) {
+    // Map animation type to CSS class pairs
+    const animationMap = {
+      fade: { out: 'animate-fade-out', in: 'animate-fade-in' },
+      'slide-horizontal': { out: 'animate-slide-out-left', in: 'animate-slide-in-right' },
+      'slide-vertical': { out: 'animate-slide-out-up', in: 'animate-slide-in-down' },
+      zoom: { out: 'animate-zoom-out', in: 'animate-zoom-in' },
+    };
+
+    const animations = animationMap[animationType];
+    if (!animations) {
+      // Unknown animation type, just update without animation
+      element.textContent = newValue;
+      return;
+    }
+
+    // Remove any existing animation classes
+    element.className = '';
+
+    // Start out animation
+    element.classList.add(animations.out);
+
+    // After animation completes, update value and animate in
+    setTimeout(() => {
+      element.textContent = newValue;
+      element.classList.remove(animations.out);
+      element.classList.add(animations.in);
+
+      // Clean up animation class after it completes
+      setTimeout(() => {
+        element.classList.remove(animations.in);
+      }, 300);
+    }, 300);
   }
 
   updateNumberDisplay(state_display_text, unit_of_measurement_text) {
@@ -315,7 +373,23 @@ class LargeDisplayCard extends HTMLElement {
       number.id = 'number';
       // small separation to unit handled by unit element margin
     }
-    number.textContent = state_display_text;
+
+    // Check if value changed and animation is configured
+    const valueChanged =
+      this.previousDisplayValue !== null && this.previousDisplayValue !== state_display_text;
+    const animationType = this.config.animation;
+
+    if (valueChanged && animationType && animationType !== 'none') {
+      // Apply animation
+      this.animateValueChange(number, state_display_text, animationType);
+    } else {
+      // No animation, just update the value
+      number.textContent = state_display_text;
+    }
+
+    // Update previous value
+    this.previousDisplayValue = state_display_text;
+
     number.style.fontSize = this.config.number.size + 'px';
     number.style.fontWeight = this.config.number.font_weight;
     number.style.color = this.config.number.color;
@@ -397,7 +471,15 @@ class LargeDisplayCard extends HTMLElement {
   }
 
   shouldUpdate() {
-    return true;
+    // Compute current display text
+    const { state_display_text } = this.computeDisplayTexts();
+
+    // If this is the first render or if displayed value changed, allow update
+    if (this.previousDisplayValue === null || this.previousDisplayValue !== state_display_text) {
+      return true;
+    }
+
+    return false;
   }
 
   /**

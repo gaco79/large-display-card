@@ -1,6 +1,7 @@
 export const DEFAULT_CONFIG = {
   entity_id: '',
   text: '',
+  animation: null,
   number: {
     size: '48',
     color: '#FFFFFF',
