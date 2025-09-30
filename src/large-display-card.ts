@@ -325,7 +325,7 @@ class LargeDisplayCard extends HTMLElement {
     const animationMap = {
       fade: { out: 'animate-fade-out', in: 'animate-fade-in' },
       'slide-horizontal': { out: 'animate-slide-out-left', in: 'animate-slide-in-right' },
-      'slide-vertical': { out: 'animate-slide-out-up', in: 'animate-slide-in-down' },
+      'slide-vertical': { out: 'animate-slide-out-up', in: 'animate-slide-in-up' },
       zoom: { out: 'animate-zoom-out', in: 'animate-zoom-in' },
     };
 

@@ -58,6 +58,17 @@ const style = css`
     }
   }
 
+  @keyframes slideOutDown {
+    from {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+
   @keyframes slideInDown {
     from {
       transform: translateY(-100%);
@@ -67,6 +78,21 @@ const style = css`
       transform: translateY(0);
       opacity: 1;
     }
+  }
+
+  @keyframes slideInUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-up {
+    animation: slideInUp 0.3s ease-in forwards;
   }
 
   @keyframes zoomOut {
