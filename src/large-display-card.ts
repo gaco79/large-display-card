@@ -360,14 +360,15 @@ class LargeDisplayCard extends HTMLElement {
     // Use local config references with safe fallbacks to DEFAULT_CONFIG to avoid
     // reading properties of undefined if this.config wasn't set yet.
     const cfg = this.config || DEFAULT_CONFIG;
-    const cfgNumber = (cfg && cfg.number) ? cfg.number : DEFAULT_CONFIG.number;
-    const uomCfg = (cfg && cfg.unit_of_measurement) ? cfg.unit_of_measurement : DEFAULT_CONFIG.unit_of_measurement;
+    const cfgNumber = cfg && cfg.number ? cfg.number : DEFAULT_CONFIG.number;
+    const uomCfg =
+      cfg && cfg.unit_of_measurement ? cfg.unit_of_measurement : DEFAULT_CONFIG.unit_of_measurement;
 
     // apply card background using shadowConfig (rendered values) if available
     const shadowCard =
-      (this.shadowConfig && this.shadowConfig.card)
+      this.shadowConfig && this.shadowConfig.card
         ? this.shadowConfig.card
-        : (cfg && cfg.card)
+        : cfg && cfg.card
           ? cfg.card
           : {};
     // Use card.background if available. Background supports any valid CSS background value
