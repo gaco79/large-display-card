@@ -48,9 +48,9 @@ unit_of_measurement:
 
 #### Card Background Configuration
 
-The card supports flexible background styling through two configuration options:
+The card supports flexible background styling.
 
-**`card.background`** (Recommended) - Accepts any valid CSS background value and supports Home Assistant templating:
+**`card.background`** - Accepts any valid CSS background value and supports Home Assistant templating:
 
 ```YAML
 # Solid color background
@@ -74,25 +74,32 @@ card:
     {% endif %}
 ```
 
-**`card.color`** (Legacy) - Used only when `card.background` is not specified. Creates a solid gradient:
-
-```YAML
-type: custom:large-display-card
-card:
-  color: red  # Creates: linear-gradient(135deg, red, red)
-```
-
-**Note:** `card.color2` has been removed. For gradient backgrounds, use `card.background` with CSS gradient syntax.
-
 #### Font Configuration
 
 The card supports custom fonts for both the number and unit of measurement. Fonts are loaded dynamically only when needed.
 
-**Available Predefined Fonts:**
-- `Home Assistant` (default) - Uses the default Home Assistant font
-- `Rubik Microbe` - Expressive Google Font with a playful style
-- `Rubik Doodle Shadow` - Bold shadowed Google Font
-- `Monofett` - Stylized monospace Google Font
+**Available Predefined Fonts (from `src/const.ts`):**
+
+The card ships with a small font registry and will dynamically load Google Fonts when required. The registry in `src/const.ts` contains the following entries (use these exact names in `font_family`):
+
+- `Home Assistant` — Default system/Home Assistant font (no external import required)
+- `Rubik` — Google Font: Rubik (multiple weights)
+- `Rubik Beastly` — Google Font: Rubik Beastly
+- `Rubik Bubbles` — Google Font: Rubik Bubbles
+- `Rubik Doodle Shadow` — Google Font: Rubik Doodle Shadow
+- `Rubik Dirt` — Google Font: Rubik Dirt
+- `Rubik Glitch` — Google Font: Rubik Glitch
+- `Rubik Iso` — Google Font: Rubik Iso
+- `Rubik Microbe` — Google Font: Rubik Microbe
+- `Rubik Moonrocks` — Google Font: Rubik Moonrocks
+- `Rubik Pixels` — Google Font: Rubik Pixels
+- `Rubik Puddles` — Google Font: Rubik Puddles
+- `Rubik Scribble` — Google Font: Rubik Scribble
+- `Rubik Spray Paint` — Google Font: Rubik Spray Paint
+- `Rubik Vinyl` — Google Font: Rubik Vinyl
+- `Rubik Wet Paint` — Google Font: Rubik Wet Paint
+
+If you use a font from this registry, the card will automatically import the Google Fonts CSS URL when the card is rendered. For fonts not listed here, ensure the font is loaded elsewhere in your Home Assistant resources.
 
 **Usage Examples:**
 
@@ -125,17 +132,80 @@ unit_of_measurement:
 **Custom Fonts:**
 You can also specify any system font or custom font name. For Google Fonts not in the predefined list, ensure they are loaded elsewhere in your Home Assistant setup.
 
-**Configuration Options:**
+#### Animation Configuration
+
+The card supports animated transitions when the displayed value changes. Configure the `animation` key to specify the type of transition:
+
+**Available Animation Types:**
+- `none` or not specified - No animation (default, instant value change)
+- `fade` - Fade out old value, fade in new value
+- `slide-horizontal` - Slide out horizontally to the left, slide in new value from the right
+- `slide-vertical` - Slide up old value, slide down new value
+- `stretch` - Stretch value horizontally and then return with new value
+- `zoom` - Zoom blur effect (zoom out old value with blur, zoom in new value)
+
+**Usage Examples:**
+
+```YAML
+# Fade animation
+type: custom:large-display-card
+entity_id: sensor.temperature
+animation: fade
+number:
+  size: 64
+```
+
+```YAML
+# Horizontal slide animation
+type: custom:large-display-card
+entity_id: sensor.power
+animation: slide-horizontal
+```
+
+```YAML
+# No animation (default behavior)
+type: custom:large-display-card
+entity_id: sensor.humidity
+# animation not specified or set to null
+```
+
+**Notes:**
+- Animations only trigger when the **displayed** value changes (after rounding/formatting)
+- If the entity state changes but the displayed value remains the same, no animation occurs
+- Each animation completes in 0.3 seconds (300ms)
 
 **Configuration Options:**
 
-| Name                    |  Type  |                      Default                      | Description |
-| ----------------------- | :----: | :-----------------------------------------------: | ----------- |
-| `card`                  | object |   `{ color: null, background: null }`           | Card styling options |
-| `number`                | object |   `{ size: 48, color: '#FFFFFF', font_weight: 'bold', decimals: 1, font_family: 'Home Assistant' }` | Number display options |
-| `number.font_family`    | string |   `'Home Assistant'`                            | Font family for the number |
-| `unit_of_measurement`   | object |   `{ display: true, as_prefix: false, size: 24, color: '#FFFFFF', font_weight: 'normal', font_family: 'Home Assistant' }` | Unit display options |
-| `unit_of_measurement.font_family` | string | `'Home Assistant'`                     | Font family for the unit |
+**Configuration Options:**
+
+Below are all supported configuration keys, their types, defaults (from `src/const.ts`) and short descriptions. Use these inside your card definition (YAML or UI editor).
+
+| Name | Type | Default | Description |
+| ---- | :--: | :-----: | ----------- |
+| `entity_id` | string | `''` | (Optional) The entity whose state/value will be displayed. If empty, set `text` to display a static value. |
+| `text` | string | `''` | (Optional) Static text to display instead of reading from an entity. Useful for labels or fixed values. |
+| `animation` | string|null | `null` | Animation type for value changes. Supported values: `none` (or omit), `fade`, `slide-horizontal`, `slide-vertical`, `zoom`. `null` (default) means no animation. |
+| `number` | object | see nested defaults | Controls the main numeric value rendering (size, color, font, decimals, weight). |
+| `number.size` | string|number | `'48'` | Font size for the number. Can be provided as a number or string (e.g. `48` or `'48'`). |
+| `number.color` | string | `'#FFFFFF'` | CSS color used for the number text. Accepts hex, rgb(a), named colors, or templated values. |
+| `number.font_weight` | string|number | `'bold'` | Font weight for the number text (e.g. `normal`, `bold`, `700`). |
+| `number.decimals` | number | `1` | Number of decimal places to display (used when formatting numeric entity states). |
+| `number.font_family` | string | `'Home Assistant'` | Font family for the number. Predefined fonts are listed in the README; custom/system fonts are allowed. |
+| `unit_of_measurement` | object | see nested defaults | Controls rendering of the unit/measurement label. |
+| `unit_of_measurement.display` | boolean | `true` | Whether to show the unit of measurement text. |
+| `unit_of_measurement.as_prefix` | boolean | `false` | When true, render the unit before the number (prefix) instead of after (suffix). |
+| `unit_of_measurement.display_text` | string|null | `null` | Override text to use for the unit instead of the entity's unit_of_measurement. Set to `null` to use the entity-provided unit. |
+| `unit_of_measurement.size` | string|number | `'24'` | Font size for the unit text. Can be number or string. |
+| `unit_of_measurement.color` | string | `'#FFFFFF'` | CSS color for the unit text. |
+| `unit_of_measurement.font_weight` | string|number | `'normal'` | Font weight for the unit text. |
+| `unit_of_measurement.font_family` | string | `'Home Assistant'` | Font family for the unit text. |
+| `card` | object | `{ color: null, background: null }` | Card-level styling options. See "Card Background Configuration" above for usage. |
+| `card.color` | string|null | `null` | Legacy single-color value used when `card.background` is not provided. Accepts any CSS color or template. |
+| `card.background` | string|null | `null` | Preferred background option. Any valid CSS background value is accepted (colors, gradients). Supports Home Assistant template syntax. |
+
+Notes:
+- Values shown as strings in defaults (for sizes) are accepted as numbers as well; the card normalizes them internally. 
+- The font registry and available predefined fonts are defined in `src/const.ts` (the README includes a list of commonly used fonts). For custom Google fonts not in the registry, ensure the font is loaded in your Home Assistant resources.
 
 ## My Other Cards
 
