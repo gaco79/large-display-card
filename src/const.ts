@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG = {
 // Font registry for predefined Google Fonts
 export const FONT_REGISTRY = {
   'Home Assistant': null, // Default font - no import needed
-  Rubik: 'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap',
+  'Rubik': 'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap',
   'Rubik Beastly': 'https://fonts.googleapis.com/css2?family=Rubik+Beastly&display=swap',
   'Rubik Bubbles': 'https://fonts.googleapis.com/css2?family=Rubik+Bubbles&display=swap',
   'Rubik Doodle Shadow':
