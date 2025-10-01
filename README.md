@@ -141,6 +141,7 @@ The card supports animated transitions when the displayed value changes. Configu
 - `fade` - Fade out old value, fade in new value
 - `slide-horizontal` - Slide out horizontally to the left, slide in new value from the right
 - `slide-vertical` - Slide up old value, slide down new value
+- `stretch` - Stretch value horizontally and then return with new value
 - `zoom` - Zoom blur effect (zoom out old value with blur, zoom in new value)
 
 **Usage Examples:**
