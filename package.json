@@ -1,6 +1,6 @@
 {
   "name": "large-display-card",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Card to display values prominently in Home Assistant",
   "keywords": [
     "home-assistant",
