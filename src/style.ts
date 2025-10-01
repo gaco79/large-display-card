@@ -91,10 +91,6 @@ const style = css`
     }
   }
 
-  .animate-slide-in-up {
-    animation: slideInUp 0.3s ease-in forwards;
-  }
-
   @keyframes zoomOut {
     from {
       transform: scale(1);
@@ -179,6 +175,10 @@ const style = css`
 
   .animate-slide-out-up {
     animation: slideOutUp 0.3s ease-out forwards;
+  }
+
+  .animate-slide-in-up {
+    animation: slideInUp 0.3s ease-in forwards;
   }
 
   .animate-slide-in-down {
