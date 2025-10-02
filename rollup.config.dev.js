@@ -20,7 +20,7 @@ export default {
       exclude: 'node_modules/**',
     }),
     terser(),
-    livereload('dist'),
+    livereload({ watch: 'dist', delay: 300 }),
   ],
   watch: {
     chokidar: true,
