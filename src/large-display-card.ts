@@ -124,26 +124,26 @@ class LargeDisplayCard extends HTMLElement {
   /**
    * Load a font if it's not already loaded and is in the font registry
    */
-  private loadFont(fontFamily: string): void {
-    if (!fontFamily || fontFamily === 'Home Assistant') {
+  private loadFont(font: string): void {
+    if (!font || font === 'Home Assistant') {
       return; // No loading needed for default font
     }
 
-    if (this.loadedFonts.has(fontFamily)) {
+    if (this.loadedFonts.has(font)) {
       return; // Already loaded
     }
 
-    const fontUrl = FONT_REGISTRY[fontFamily as keyof typeof FONT_REGISTRY];
+    const fontUrl = FONT_REGISTRY[font as keyof typeof FONT_REGISTRY];
     if (fontUrl) {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = fontUrl;
       document.head.appendChild(link);
-      this.loadedFonts.add(fontFamily);
+      this.loadedFonts.add(font);
     } else {
       // For custom fonts or fonts not in registry, assume they're available
       // Could be system fonts or fonts loaded elsewhere
-      this.loadedFonts.add(fontFamily);
+      this.loadedFonts.add(font);
     }
   }
 
@@ -379,7 +379,7 @@ class LargeDisplayCard extends HTMLElement {
     }
 
     // Load fonts if needed
-    const numberFontFamily = cfgNumber.font_family || DEFAULT_CONFIG.number.font_family;
+    const numberFontFamily = cfgNumber.font || DEFAULT_CONFIG.number.font;
     this.loadFont(numberFontFamily);
 
     // ensure number span
@@ -422,7 +422,7 @@ class LargeDisplayCard extends HTMLElement {
     // handle unit if displayed (guard in case unit_of_measurement is missing or null)
     if (uomCfg && uomCfg.display) {
       // Load font for unit if different from number font
-      const unitFontFamily = uomCfg.font_family || DEFAULT_CONFIG.unit_of_measurement.font_family;
+      const unitFontFamily = uomCfg.font || DEFAULT_CONFIG.unit_of_measurement.font;
       this.loadFont(unitFontFamily);
 
       let unit_of_measurement_element = this.numberEl.querySelector('span#unit_of_measurement');
