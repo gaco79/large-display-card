@@ -194,7 +194,7 @@ class LargeDisplayCard extends HTMLElement {
         }
 
         // title: prefer explicit text, then attribute, then empty
-        const cfgTitleText = this?.config?.title?.text;
+        const cfgTitleText = this?.shadowConfig?.title?.text ?? this?.config?.title?.text;
         const cfgTitleAttr = this?.config?.title?.attribute;
         if (cfgTitleText !== null && cfgTitleText !== undefined) {
           title_text = String(cfgTitleText);
@@ -207,7 +207,7 @@ class LargeDisplayCard extends HTMLElement {
         }
 
         // subtitle: prefer explicit text, then attribute, then empty
-        const cfgSubtitleText = this?.config?.subtitle?.text;
+        const cfgSubtitleText = this?.shadowConfig?.subtitle?.text ?? this?.config?.subtitle?.text;
         const cfgSubtitleAttr = this?.config?.subtitle?.attribute;
         if (cfgSubtitleText !== null && cfgSubtitleText !== undefined) {
           subtitle_text = String(cfgSubtitleText);
@@ -237,12 +237,12 @@ class LargeDisplayCard extends HTMLElement {
       }
 
       // title and subtitle: use static text if provided
-      const cfgTitleText = this?.config?.title?.text;
+      const cfgTitleText = this?.shadowConfig?.title?.text ?? this?.config?.title?.text;
       if (cfgTitleText !== null && cfgTitleText !== undefined) {
         title_text = String(cfgTitleText);
       }
 
-      const cfgSubtitleText = this?.config?.subtitle?.text;
+      const cfgSubtitleText = this?.shadowConfig?.subtitle?.text ?? this?.config?.subtitle?.text;
       if (cfgSubtitleText !== null && cfgSubtitleText !== undefined) {
         subtitle_text = String(cfgSubtitleText);
       }
@@ -252,51 +252,115 @@ class LargeDisplayCard extends HTMLElement {
   }
 
   /**
-   * If card.background is a template, render it via hass.callApi and update shadowConfig.
+   * If card.background, title.text, or subtitle.text is a template, render it via hass.callApi and update shadowConfig.
    */
-  private async applyCardTemplateColor() {
-    // ensure config/card present
-    if (!this.config || !this.config.card) return;
+  private async applyTemplates() {
+    if (!this.config) return;
 
     // ensure shadowConfig exists (clone of this.config)
     if (!this.shadowConfig) {
       this.shadowConfig = this.deepMerge({}, this.config);
-    } else {
-      // keep shadowConfig keys for card initialized
-      this.shadowConfig.card = this.shadowConfig.card || {};
     }
 
-    const cardCfg = this.config.card || {};
-    const keys = ['background'];
+    // Apply card.background template
+    if (this.config.card) {
+      this.shadowConfig.card = this.shadowConfig.card || {};
+      const cardCfg = this.config.card || {};
+      const keys = ['background'];
 
-    for (const key of keys) {
-      const tpl = cardCfg[key];
-      // if no value, ensure shadow has something sensible
-      if (!tpl && this.shadowConfig.card[key]) continue;
+      for (const key of keys) {
+        const tpl = cardCfg[key];
+        // if no value, ensure shadow has something sensible
+        if (!tpl && this.shadowConfig.card[key]) continue;
 
-      if (typeof tpl === 'string' && (tpl.includes('{{') || tpl.includes('{%'))) {
-        if (this._hass && typeof this._hass.callApi === 'function') {
-          try {
-            const rendered: string = await this._hass.callApi('POST', 'template', {
-              template: tpl,
-            });
-            if (typeof rendered === 'string' && rendered.trim() !== '') {
-              this.shadowConfig.card[key] = rendered.trim();
-            } else {
-              // fallback to previous shadow value or original template text
+        if (typeof tpl === 'string' && (tpl.includes('{{') || tpl.includes('{%'))) {
+          if (this._hass && typeof this._hass.callApi === 'function') {
+            try {
+              const rendered: string = await this._hass.callApi('POST', 'template', {
+                template: tpl,
+              });
+              if (typeof rendered === 'string' && rendered.trim() !== '') {
+                this.shadowConfig.card[key] = rendered.trim();
+              } else {
+                // fallback to previous shadow value or original template text
+                this.shadowConfig.card[key] = this.shadowConfig.card[key] || tpl;
+              }
+            } catch (err) {
+              console.warn(`large-display-card: template render failed for card.${key}`, err);
               this.shadowConfig.card[key] = this.shadowConfig.card[key] || tpl;
             }
-          } catch (err) {
-            console.warn(`large-display-card: template render failed for card.${key}`, err);
+          } else {
+            // no hass.callApi available yet; keep previous shadow or raw template
             this.shadowConfig.card[key] = this.shadowConfig.card[key] || tpl;
           }
         } else {
-          // no hass.callApi available yet; keep previous shadow or raw template
-          this.shadowConfig.card[key] = this.shadowConfig.card[key] || tpl;
+          // static value: copy into shadow so background can use it uniformly
+          this.shadowConfig.card[key] = tpl;
+        }
+      }
+    }
+
+    // Apply title.text template
+    if (this.config.title) {
+      this.shadowConfig.title = this.shadowConfig.title || {};
+      const titleText = this.config.title.text;
+
+      if (
+        titleText &&
+        typeof titleText === 'string' &&
+        (titleText.includes('{{') || titleText.includes('{%'))
+      ) {
+        if (this._hass && typeof this._hass.callApi === 'function') {
+          try {
+            const rendered: string = await this._hass.callApi('POST', 'template', {
+              template: titleText,
+            });
+            if (typeof rendered === 'string') {
+              this.shadowConfig.title.text = rendered;
+            } else {
+              this.shadowConfig.title.text = this.shadowConfig.title.text || titleText;
+            }
+          } catch (err) {
+            console.warn('large-display-card: template render failed for title.text', err);
+            this.shadowConfig.title.text = this.shadowConfig.title.text || titleText;
+          }
+        } else {
+          this.shadowConfig.title.text = this.shadowConfig.title.text || titleText;
         }
       } else {
-        // static value: copy into shadow so background can use it uniformly
-        this.shadowConfig.card[key] = tpl;
+        this.shadowConfig.title.text = titleText;
+      }
+    }
+
+    // Apply subtitle.text template
+    if (this.config.subtitle) {
+      this.shadowConfig.subtitle = this.shadowConfig.subtitle || {};
+      const subtitleText = this.config.subtitle.text;
+
+      if (
+        subtitleText &&
+        typeof subtitleText === 'string' &&
+        (subtitleText.includes('{{') || subtitleText.includes('{%'))
+      ) {
+        if (this._hass && typeof this._hass.callApi === 'function') {
+          try {
+            const rendered: string = await this._hass.callApi('POST', 'template', {
+              template: subtitleText,
+            });
+            if (typeof rendered === 'string') {
+              this.shadowConfig.subtitle.text = rendered;
+            } else {
+              this.shadowConfig.subtitle.text = this.shadowConfig.subtitle.text || subtitleText;
+            }
+          } catch (err) {
+            console.warn('large-display-card: template render failed for subtitle.text', err);
+            this.shadowConfig.subtitle.text = this.shadowConfig.subtitle.text || subtitleText;
+          }
+        } else {
+          this.shadowConfig.subtitle.text = this.shadowConfig.subtitle.text || subtitleText;
+        }
+      } else {
+        this.shadowConfig.subtitle.text = subtitleText;
       }
     }
 
@@ -357,17 +421,17 @@ class LargeDisplayCard extends HTMLElement {
   }
 
   async updateContent() {
-    // compute display text from hass + config
-    const { state_display_text, unit_of_measurement_text, title_text, subtitle_text } =
-      this.computeDisplayTexts();
-
     // Check if we should update (value changed)
     if (!this.shouldUpdate()) {
       return;
     }
 
-    // evaluate templates in card color if needed (may update shadowConfig.card.color)
-    await this.applyCardTemplateColor();
+    // evaluate templates in card color, title, and subtitle if needed
+    await this.applyTemplates();
+
+    // compute display text from hass + config (after templates are applied)
+    const { state_display_text, unit_of_measurement_text, title_text, subtitle_text } =
+      this.computeDisplayTexts();
 
     // create card and number container if this is first render
     this.ensureCard();
