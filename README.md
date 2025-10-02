@@ -41,7 +41,7 @@ card:
   color: red
 number:
   size: 96
-  font_family: "Rubik Microbe"
+  font: "Rubik Microbe"
 unit_of_measurement:
   display: false
 ```
@@ -80,7 +80,7 @@ The card supports custom fonts for both the number and unit of measurement. Font
 
 **Available Predefined Fonts (from `src/const.ts`):**
 
-The card ships with a small font registry and will dynamically load Google Fonts when required. The registry in `src/const.ts` contains the following entries (use these exact names in `font_family`):
+The card ships with a small font registry and will dynamically load Google Fonts when required. The registry in `src/const.ts` contains the following entries (use these exact names in `font`):
 
 - `Home Assistant` — Default system/Home Assistant font (no external import required)
 - `Rubik` — Google Font: Rubik (multiple weights)
@@ -109,11 +109,11 @@ type: custom:large-display-card
 entity_id: sensor.temperature
 number:
   size: 64
-  font_family: "Rubik Microbe"
+  font: "Rubik Microbe"
   color: "#FFFFFF"
 unit_of_measurement:
   display: true
-  font_family: "Home Assistant"
+  font: "Home Assistant"
 ```
 
 ```YAML
@@ -122,10 +122,10 @@ type: custom:large-display-card
 entity_id: sensor.power
 number:
   size: 48
-  font_family: "Monofett"
+  font: "Monofett"
 unit_of_measurement:
   display: true
-  font_family: "Monofett"
+  font: "Monofett"
   size: 16
 ```
 
@@ -190,7 +190,7 @@ Below are all supported configuration keys, their types, defaults (from `src/con
 | `number.color` | string | `'#FFFFFF'` | CSS color used for the number text. Accepts hex, rgb(a), named colors, or templated values. |
 | `number.font_weight` | string|number | `'bold'` | Font weight for the number text (e.g. `normal`, `bold`, `700`). |
 | `number.decimals` | number | `1` | Number of decimal places to display (used when formatting numeric entity states). |
-| `number.font_family` | string | `'Home Assistant'` | Font family for the number. Predefined fonts are listed in the README; custom/system fonts are allowed. |
+| `number.font` | string | `'Home Assistant'` | Font family for the number. Predefined fonts are listed in the README; custom/system fonts are allowed. |
 | `unit_of_measurement` | object | see nested defaults | Controls rendering of the unit/measurement label. |
 | `unit_of_measurement.display` | boolean | `true` | Whether to show the unit of measurement text. |
 | `unit_of_measurement.as_prefix` | boolean | `false` | When true, render the unit before the number (prefix) instead of after (suffix). |
@@ -198,7 +198,7 @@ Below are all supported configuration keys, their types, defaults (from `src/con
 | `unit_of_measurement.size` | string|number | `'24'` | Font size for the unit text. Can be number or string. |
 | `unit_of_measurement.color` | string | `'#FFFFFF'` | CSS color for the unit text. |
 | `unit_of_measurement.font_weight` | string|number | `'normal'` | Font weight for the unit text. |
-| `unit_of_measurement.font_family` | string | `'Home Assistant'` | Font family for the unit text. |
+| `unit_of_measurement.font` | string | `'Home Assistant'` | Font family for the unit text. |
 | `card` | object | `{ color: null, background: null }` | Card-level styling options. See "Card Background Configuration" above for usage. |
 | `card.color` | string|null | `null` | Legacy single-color value used when `card.background` is not provided. Accepts any CSS color or template. |
 | `card.background` | string|null | `null` | Preferred background option. Any valid CSS background value is accepted (colors, gradients). Supports Home Assistant template syntax. |

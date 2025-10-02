@@ -7,7 +7,7 @@ export const DEFAULT_CONFIG = {
     color: '#FFFFFF',
     font_weight: 'bold',
     decimals: 1,
-    font_family: 'Home Assistant',
+    font: 'Home Assistant',
   },
   unit_of_measurement: {
     display: true,
@@ -16,7 +16,7 @@ export const DEFAULT_CONFIG = {
     size: '24',
     color: '#FFFFFF',
     font_weight: 'normal',
-    font_family: 'Home Assistant',
+    font: 'Home Assistant',
   },
   card: { color: null, background: null },
 };
