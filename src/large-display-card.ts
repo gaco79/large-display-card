@@ -509,7 +509,7 @@ class LargeDisplayCard extends HTMLElement {
     }
 
     // Load fonts if needed
-    const numberFontFamily = cfgNumber.font || DEFAULT_CONFIG.number.font;
+    const numberFontFamily = cfgNumber.font ?? cfg.font ?? DEFAULT_CONFIG.font;
     this.loadFont(numberFontFamily);
 
     // ensure number span
@@ -536,9 +536,10 @@ class LargeDisplayCard extends HTMLElement {
     // Update previous value
     this.previousDisplayValue = state_display_text;
 
-    number.style.fontSize = (cfgNumber.size ?? DEFAULT_CONFIG.number.size) + 'px';
-    number.style.fontWeight = cfgNumber.font_weight ?? DEFAULT_CONFIG.number.font_weight;
-    number.style.color = cfgNumber.color ?? DEFAULT_CONFIG.number.color;
+    number.style.fontSize = (cfgNumber.size ?? cfg.size ?? DEFAULT_CONFIG.number.size) + 'px';
+    number.style.fontWeight =
+      cfgNumber.font_weight ?? cfg.font_weight ?? DEFAULT_CONFIG.number.font_weight;
+    number.style.color = cfgNumber.color ?? cfg.color ?? DEFAULT_CONFIG.color;
     number.style.fontFamily =
       numberFontFamily === 'Home Assistant'
         ? 'var(--ha-card-header-font-family, inherit)'
@@ -552,7 +553,7 @@ class LargeDisplayCard extends HTMLElement {
     // handle unit if displayed (guard in case unit_of_measurement is missing or null)
     if (uomCfg && uomCfg.display) {
       // Load font for unit if different from number font
-      const unitFontFamily = uomCfg.font || DEFAULT_CONFIG.unit_of_measurement.font;
+      const unitFontFamily = uomCfg.font ?? cfg.font ?? DEFAULT_CONFIG.font;
       this.loadFont(unitFontFamily);
 
       let unit_of_measurement_element = this.numberEl.querySelector('span#unit_of_measurement');
@@ -564,11 +565,10 @@ class LargeDisplayCard extends HTMLElement {
 
       unit_of_measurement_element.textContent = unit_of_measurement_text;
       unit_of_measurement_element.style.fontSize =
-        (uomCfg.size ?? DEFAULT_CONFIG.unit_of_measurement.size) + 'px';
+        (uomCfg.size ?? cfg.size ?? DEFAULT_CONFIG.unit_of_measurement.size) + 'px';
       unit_of_measurement_element.style.fontWeight =
-        uomCfg.font_weight ?? DEFAULT_CONFIG.unit_of_measurement.font_weight;
-      unit_of_measurement_element.style.color =
-        uomCfg.color ?? DEFAULT_CONFIG.unit_of_measurement.color;
+        uomCfg.font_weight ?? cfg.font_weight ?? DEFAULT_CONFIG.unit_of_measurement.font_weight;
+      unit_of_measurement_element.style.color = uomCfg.color ?? cfg.color ?? DEFAULT_CONFIG.color;
       unit_of_measurement_element.style.fontFamily =
         unitFontFamily === 'Home Assistant'
           ? 'var(--ha-card-header-font-family, inherit)'
@@ -606,7 +606,7 @@ class LargeDisplayCard extends HTMLElement {
     const titleContainer = this.card?.querySelector('#title-container');
     if (titleContainer && titleCfg && titleCfg.display && title_text) {
       // Load font for title
-      const titleFontFamily = titleCfg.font || DEFAULT_CONFIG.title.font;
+      const titleFontFamily = titleCfg.font ?? cfg.font ?? DEFAULT_CONFIG.font;
       this.loadFont(titleFontFamily);
 
       let titleElement = titleContainer.querySelector('span#title');
@@ -617,9 +617,10 @@ class LargeDisplayCard extends HTMLElement {
       }
 
       titleElement.textContent = title_text;
-      titleElement.style.fontSize = (titleCfg.size ?? DEFAULT_CONFIG.title.size) + 'px';
-      titleElement.style.fontWeight = titleCfg.font_weight ?? DEFAULT_CONFIG.title.font_weight;
-      titleElement.style.color = titleCfg.color ?? DEFAULT_CONFIG.title.color;
+      titleElement.style.fontSize = (titleCfg.size ?? cfg.size ?? DEFAULT_CONFIG.title.size) + 'px';
+      titleElement.style.fontWeight =
+        titleCfg.font_weight ?? cfg.font_weight ?? DEFAULT_CONFIG.title.font_weight;
+      titleElement.style.color = titleCfg.color ?? cfg.color ?? DEFAULT_CONFIG.color;
       titleElement.style.fontFamily =
         titleFontFamily === 'Home Assistant'
           ? 'var(--ha-card-header-font-family, inherit)'
@@ -636,7 +637,7 @@ class LargeDisplayCard extends HTMLElement {
     const subtitleContainer = this.card?.querySelector('#subtitle-container');
     if (subtitleContainer && subtitleCfg && subtitleCfg.display && subtitle_text) {
       // Load font for subtitle
-      const subtitleFontFamily = subtitleCfg.font || DEFAULT_CONFIG.subtitle.font;
+      const subtitleFontFamily = subtitleCfg.font ?? cfg.font ?? DEFAULT_CONFIG.font;
       this.loadFont(subtitleFontFamily);
 
       let subtitleElement = subtitleContainer.querySelector('span#subtitle');
@@ -647,10 +648,11 @@ class LargeDisplayCard extends HTMLElement {
       }
 
       subtitleElement.textContent = subtitle_text;
-      subtitleElement.style.fontSize = (subtitleCfg.size ?? DEFAULT_CONFIG.subtitle.size) + 'px';
+      subtitleElement.style.fontSize =
+        (subtitleCfg.size ?? cfg.size ?? DEFAULT_CONFIG.subtitle.size) + 'px';
       subtitleElement.style.fontWeight =
-        subtitleCfg.font_weight ?? DEFAULT_CONFIG.subtitle.font_weight;
-      subtitleElement.style.color = subtitleCfg.color ?? DEFAULT_CONFIG.subtitle.color;
+        subtitleCfg.font_weight ?? cfg.font_weight ?? DEFAULT_CONFIG.subtitle.font_weight;
+      subtitleElement.style.color = subtitleCfg.color ?? cfg.color ?? DEFAULT_CONFIG.color;
       subtitleElement.style.fontFamily =
         subtitleFontFamily === 'Home Assistant'
           ? 'var(--ha-card-header-font-family, inherit)'
