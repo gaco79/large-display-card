@@ -622,7 +622,6 @@ class LargeDisplayCard extends HTMLElement {
         titleFontFamily === 'Home Assistant'
           ? 'var(--ha-card-header-font-family, inherit)'
           : titleFontFamily;
-      titleElement.style.marginBottom = '8px';
     } else if (titleContainer) {
       // Remove title element if not displayed
       const existingTitle = titleContainer.querySelector('span#title');
@@ -654,7 +653,6 @@ class LargeDisplayCard extends HTMLElement {
         subtitleFontFamily === 'Home Assistant'
           ? 'var(--ha-card-header-font-family, inherit)'
           : subtitleFontFamily;
-      subtitleElement.style.marginTop = '8px';
     } else if (subtitleContainer) {
       // Remove subtitle element if not displayed
       const existingSubtitle = subtitleContainer.querySelector('span#subtitle');
