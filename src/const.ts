@@ -18,6 +18,24 @@ export const DEFAULT_CONFIG = {
     font_weight: 'normal',
     font: 'Home Assistant',
   },
+  title: {
+    display: false,
+    text: null,
+    attribute: null,
+    size: '16',
+    color: '#FFFFFF',
+    font_weight: 'normal',
+    font: 'Home Assistant',
+  },
+  subtitle: {
+    display: false,
+    text: null,
+    attribute: null,
+    size: '16',
+    color: '#FFFFFF',
+    font_weight: 'normal',
+    font: 'Home Assistant',
+  },
   card: { color: null, background: null },
 };
 

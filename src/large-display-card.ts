@@ -159,6 +159,8 @@ class LargeDisplayCard extends HTMLElement {
   private computeDisplayTexts() {
     let state_display_text = '0';
     let unit_of_measurement_text = '';
+    let title_text = '';
+    let subtitle_text = '';
 
     const hasEntityId = this.config && this.config.entity_id;
     const hassStates = this._hass && this._hass.states;
@@ -190,6 +192,32 @@ class LargeDisplayCard extends HTMLElement {
         } else if (stateObj.attributes && stateObj.attributes.unit_of_measurement) {
           unit_of_measurement_text = stateObj.attributes.unit_of_measurement;
         }
+
+        // title: prefer explicit text, then attribute, then empty
+        const cfgTitleText = this?.config?.title?.text;
+        const cfgTitleAttr = this?.config?.title?.attribute;
+        if (cfgTitleText !== null && cfgTitleText !== undefined) {
+          title_text = String(cfgTitleText);
+        } else if (
+          cfgTitleAttr &&
+          stateObj.attributes &&
+          stateObj.attributes[cfgTitleAttr] !== undefined
+        ) {
+          title_text = String(stateObj.attributes[cfgTitleAttr]);
+        }
+
+        // subtitle: prefer explicit text, then attribute, then empty
+        const cfgSubtitleText = this?.config?.subtitle?.text;
+        const cfgSubtitleAttr = this?.config?.subtitle?.attribute;
+        if (cfgSubtitleText !== null && cfgSubtitleText !== undefined) {
+          subtitle_text = String(cfgSubtitleText);
+        } else if (
+          cfgSubtitleAttr &&
+          stateObj.attributes &&
+          stateObj.attributes[cfgSubtitleAttr] !== undefined
+        ) {
+          subtitle_text = String(stateObj.attributes[cfgSubtitleAttr]);
+        }
       } else {
         state_display_text = 'unknown';
       }
@@ -207,9 +235,20 @@ class LargeDisplayCard extends HTMLElement {
       if (cfgUnitText != null) {
         unit_of_measurement_text = String(cfgUnitText);
       }
+
+      // title and subtitle: use static text if provided
+      const cfgTitleText = this?.config?.title?.text;
+      if (cfgTitleText !== null && cfgTitleText !== undefined) {
+        title_text = String(cfgTitleText);
+      }
+
+      const cfgSubtitleText = this?.config?.subtitle?.text;
+      if (cfgSubtitleText !== null && cfgSubtitleText !== undefined) {
+        subtitle_text = String(cfgSubtitleText);
+      }
     }
 
-    return { state_display_text, unit_of_measurement_text };
+    return { state_display_text, unit_of_measurement_text, title_text, subtitle_text };
   }
 
   /**
@@ -274,11 +313,21 @@ class LargeDisplayCard extends HTMLElement {
     this.card = document.createElement('ha-card');
 
     this.card.style.display = 'flex';
+    this.card.style.flexDirection = 'column';
     this.card.style.justifyContent = 'center';
     this.card.style.alignItems = 'center';
     this.card.style.padding = '16px';
     this.card.style.color = 'white';
 
+    // Create title container
+    const titleContainer = document.createElement('div');
+    titleContainer.id = 'title-container';
+    titleContainer.style.display = 'flex';
+    titleContainer.style.justifyContent = 'center';
+    titleContainer.style.alignItems = 'center';
+    titleContainer.style.width = '100%';
+
+    // Create number container (horizontal layout for number and unit)
     const numberBox = document.createElement('div');
     numberBox.style.display = 'flex';
     numberBox.style.flexDirection = 'row';
@@ -286,9 +335,20 @@ class LargeDisplayCard extends HTMLElement {
     numberBox.style.alignItems = 'center';
     numberBox.style.margin = '16px';
 
+    // Create subtitle container
+    const subtitleContainer = document.createElement('div');
+    subtitleContainer.id = 'subtitle-container';
+    subtitleContainer.style.display = 'flex';
+    subtitleContainer.style.justifyContent = 'center';
+    subtitleContainer.style.alignItems = 'center';
+    subtitleContainer.style.width = '100%';
+
     this.numberEl = numberBox;
 
+    this.card.appendChild(titleContainer);
     this.card.appendChild(numberBox);
+    this.card.appendChild(subtitleContainer);
+
     if (this.shadowRoot) {
       this.shadowRoot.appendChild(this.card);
     }
@@ -298,7 +358,8 @@ class LargeDisplayCard extends HTMLElement {
 
   async updateContent() {
     // compute display text from hass + config
-    const { state_display_text, unit_of_measurement_text } = this.computeDisplayTexts();
+    const { state_display_text, unit_of_measurement_text, title_text, subtitle_text } =
+      this.computeDisplayTexts();
 
     // Check if we should update (value changed)
     if (!this.shouldUpdate()) {
@@ -315,6 +376,9 @@ class LargeDisplayCard extends HTMLElement {
     if (this.numberEl) {
       this.updateNumberDisplay(state_display_text, unit_of_measurement_text);
     }
+
+    // update title and subtitle
+    this.updateTitleAndSubtitle(title_text, subtitle_text);
   }
 
   /**
@@ -461,6 +525,78 @@ class LargeDisplayCard extends HTMLElement {
       this.numberEl.style.flexDirection = 'row-reverse';
     } else {
       this.numberEl.style.flexDirection = 'row';
+    }
+  }
+
+  /**
+   * Update title and subtitle elements
+   */
+  updateTitleAndSubtitle(title_text: string, subtitle_text: string) {
+    const cfg = this.config || DEFAULT_CONFIG;
+    const titleCfg = cfg && cfg.title ? cfg.title : DEFAULT_CONFIG.title;
+    const subtitleCfg = cfg && cfg.subtitle ? cfg.subtitle : DEFAULT_CONFIG.subtitle;
+
+    // Update title
+    const titleContainer = this.card?.querySelector('#title-container');
+    if (titleContainer && titleCfg && titleCfg.display && title_text) {
+      // Load font for title
+      const titleFontFamily = titleCfg.font || DEFAULT_CONFIG.title.font;
+      this.loadFont(titleFontFamily);
+
+      let titleElement = titleContainer.querySelector('span#title');
+      if (!titleElement) {
+        titleElement = document.createElement('span');
+        titleElement.id = 'title';
+        titleContainer.appendChild(titleElement);
+      }
+
+      titleElement.textContent = title_text;
+      titleElement.style.fontSize = (titleCfg.size ?? DEFAULT_CONFIG.title.size) + 'px';
+      titleElement.style.fontWeight = titleCfg.font_weight ?? DEFAULT_CONFIG.title.font_weight;
+      titleElement.style.color = titleCfg.color ?? DEFAULT_CONFIG.title.color;
+      titleElement.style.fontFamily =
+        titleFontFamily === 'Home Assistant'
+          ? 'var(--ha-card-header-font-family, inherit)'
+          : titleFontFamily;
+      titleElement.style.marginBottom = '8px';
+    } else if (titleContainer) {
+      // Remove title element if not displayed
+      const existingTitle = titleContainer.querySelector('span#title');
+      if (existingTitle && existingTitle.parentElement) {
+        existingTitle.parentElement.removeChild(existingTitle);
+      }
+    }
+
+    // Update subtitle
+    const subtitleContainer = this.card?.querySelector('#subtitle-container');
+    if (subtitleContainer && subtitleCfg && subtitleCfg.display && subtitle_text) {
+      // Load font for subtitle
+      const subtitleFontFamily = subtitleCfg.font || DEFAULT_CONFIG.subtitle.font;
+      this.loadFont(subtitleFontFamily);
+
+      let subtitleElement = subtitleContainer.querySelector('span#subtitle');
+      if (!subtitleElement) {
+        subtitleElement = document.createElement('span');
+        subtitleElement.id = 'subtitle';
+        subtitleContainer.appendChild(subtitleElement);
+      }
+
+      subtitleElement.textContent = subtitle_text;
+      subtitleElement.style.fontSize = (subtitleCfg.size ?? DEFAULT_CONFIG.subtitle.size) + 'px';
+      subtitleElement.style.fontWeight =
+        subtitleCfg.font_weight ?? DEFAULT_CONFIG.subtitle.font_weight;
+      subtitleElement.style.color = subtitleCfg.color ?? DEFAULT_CONFIG.subtitle.color;
+      subtitleElement.style.fontFamily =
+        subtitleFontFamily === 'Home Assistant'
+          ? 'var(--ha-card-header-font-family, inherit)'
+          : subtitleFontFamily;
+      subtitleElement.style.marginTop = '8px';
+    } else if (subtitleContainer) {
+      // Remove subtitle element if not displayed
+      const existingSubtitle = subtitleContainer.querySelector('span#subtitle');
+      if (existingSubtitle && existingSubtitle.parentElement) {
+        existingSubtitle.parentElement.removeChild(existingSubtitle);
+      }
     }
   }
 
