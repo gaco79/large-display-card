@@ -37,13 +37,22 @@ In Home Assistant click `Edit Dashboard`, then `Add Card` and scroll down to fin
 
 ```YAML
 type: custom:large-display-card
+entity_id: sensor.temperature
 card:
-  color: red
+  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+title:
+  display: true
+  text: "Living Room"
+  size: 18
 number:
   size: 96
   font: "Rubik Microbe"
+subtitle:
+  display: true
+  attribute: friendly_name
+  size: 14
 unit_of_measurement:
-  display: false
+  display: true
 ```
 
 #### Card Background Configuration
@@ -174,6 +183,91 @@ entity_id: sensor.humidity
 - If the entity state changes but the displayed value remains the same, no animation occurs
 - Each animation completes in 0.3 seconds (300ms)
 
+#### Title and Subtitle Configuration
+
+The card supports displaying additional text above (title) and below (subtitle) the main value. Both can be configured to display static text, entity attributes, or Home Assistant templates.
+
+**Configuration Options:**
+
+Title and subtitle support the same configuration structure with the following properties:
+- `display` - Boolean to show/hide the title or subtitle (default: `false`)
+- `text` - Static text or Home Assistant template to display
+- `attribute` - Entity attribute name to display (used when `text` is not provided)
+- `size` - Font size in pixels (default: `'16'`)
+- `color` - CSS color (default: `'#FFFFFF'`)
+- `font_weight` - Font weight (default: `'normal'`)
+- `font` - Font family (default: `'Home Assistant'`)
+
+**Priority:** If both `text` and `attribute` are configured, `text` takes precedence.
+
+**Usage Examples:**
+
+```YAML
+# Static title and subtitle
+type: custom:large-display-card
+entity_id: sensor.temperature
+title:
+  display: true
+  text: "Living Room"
+  size: 18
+  color: "#4CAF50"
+subtitle:
+  display: true
+  text: "Current Temperature"
+  size: 14
+  color: "#2196F3"
+```
+
+```YAML
+# Display entity attributes as title and subtitle
+type: custom:large-display-card
+entity_id: sensor.power_consumption
+title:
+  display: true
+  attribute: friendly_name
+  size: 16
+subtitle:
+  display: true
+  attribute: device_class
+  size: 14
+```
+
+```YAML
+# Template-based title and subtitle (dynamic based on state)
+type: custom:large-display-card
+entity_id: sensor.temperature
+title:
+  display: true
+  text: >
+    {% if states('sensor.temperature') | float > 25 %}
+      Hot 🔥
+    {% else %}
+      Cool ❄️
+    {% endif %}
+  size: 20
+  color: >
+    {% if states('sensor.temperature') | float > 25 %}
+      #FF5722
+    {% else %}
+      #2196F3
+    {% endif %}
+subtitle:
+  display: true
+  text: "{{ now().strftime('%H:%M') }}"
+  size: 14
+```
+
+```YAML
+# Title only (no subtitle)
+type: custom:large-display-card
+text: "42"
+title:
+  display: true
+  text: "Answer to Everything"
+  font: "Rubik"
+  size: 20
+```
+
 **Configuration Options:**
 
 **Configuration Options:**
@@ -199,6 +293,22 @@ Below are all supported configuration keys, their types, defaults (from `src/con
 | `unit_of_measurement.color` | string | `'#FFFFFF'` | CSS color for the unit text. |
 | `unit_of_measurement.font_weight` | string|number | `'normal'` | Font weight for the unit text. |
 | `unit_of_measurement.font` | string | `'Home Assistant'` | Font family for the unit text. |
+| `title` | object | see nested defaults | Controls rendering of optional title text above the main value. |
+| `title.display` | boolean | `false` | Whether to show the title text. |
+| `title.text` | string|null | `null` | Static text or Home Assistant template to display. Takes precedence over `attribute`. |
+| `title.attribute` | string|null | `null` | Entity attribute name to display (e.g., `friendly_name`). Used when `text` is not provided. |
+| `title.size` | string|number | `'16'` | Font size for the title text. |
+| `title.color` | string | `'#FFFFFF'` | CSS color for the title text. |
+| `title.font_weight` | string|number | `'normal'` | Font weight for the title text. |
+| `title.font` | string | `'Home Assistant'` | Font family for the title text. |
+| `subtitle` | object | see nested defaults | Controls rendering of optional subtitle text below the main value. |
+| `subtitle.display` | boolean | `false` | Whether to show the subtitle text. |
+| `subtitle.text` | string|null | `null` | Static text or Home Assistant template to display. Takes precedence over `attribute`. |
+| `subtitle.attribute` | string|null | `null` | Entity attribute name to display (e.g., `device_class`). Used when `text` is not provided. |
+| `subtitle.size` | string|number | `'16'` | Font size for the subtitle text. |
+| `subtitle.color` | string | `'#FFFFFF'` | CSS color for the subtitle text. |
+| `subtitle.font_weight` | string|number | `'normal'` | Font weight for the subtitle text. |
+| `subtitle.font` | string | `'Home Assistant'` | Font family for the subtitle text. |
 | `card` | object | `{ color: null, background: null }` | Card-level styling options. See "Card Background Configuration" above for usage. |
 | `card.color` | string|null | `null` | Legacy single-color value used when `card.background` is not provided. Accepts any CSS color or template. |
 | `card.background` | string|null | `null` | Preferred background option. Any valid CSS background value is accepted (colors, gradients). Supports Home Assistant template syntax. |
