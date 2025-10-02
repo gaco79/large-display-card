@@ -147,8 +147,10 @@ class LargeDisplayCard extends HTMLElement {
     }
   }
 
+  /**
+   * Store hass internally and re-render when it changes
+   */
   set hass(hass) {
-    // store hass internally and re-render when it changes
     this._hass = hass;
     this.updateContent();
   }
@@ -397,7 +399,7 @@ class LargeDisplayCard extends HTMLElement {
     numberBox.style.flexDirection = 'row';
     numberBox.style.justifyContent = 'center';
     numberBox.style.alignItems = 'center';
-    numberBox.style.margin = '16px';
+    numberBox.style.lineHeight = '1';
 
     // Create subtitle container
     const subtitleContainer = document.createElement('div');
