@@ -37,13 +37,61 @@ In Home Assistant click `Edit Dashboard`, then `Add Card` and scroll down to fin
 
 ```YAML
 type: custom:large-display-card
+entity_id: sensor.temperature
+# Root-level styling applies to all text elements
+font: "Rubik"
+color: "#FFFFFF"
 card:
-  color: red
+  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+title:
+  display: true
+  text: "Living Room"
+  size: 18
 number:
   size: 96
-  font: "Rubik Microbe"
+  font_weight: "bold"  # Overrides root font_weight for number only
+subtitle:
+  display: true
+  attribute: friendly_name
+  size: 14
 unit_of_measurement:
-  display: false
+  display: true
+```
+
+#### Global Styling Configuration
+
+The card supports root-level styling properties that cascade to all text elements (number, unit, title, subtitle). More specific properties override these global defaults.
+
+**Root-level Properties:**
+- `font` - Font family for all text (default: `'Home Assistant'`)
+- `color` - Text color for all text (default: `'#FFFFFF'`)
+- `font_weight` - Font weight for all text (default: `null`, uses element-specific defaults)
+- `size` - Font size for all text (default: `null`, uses element-specific defaults)
+
+**Priority Order (highest to lowest):**
+1. Element-specific property (e.g., `number.font`)
+2. Root-level property (e.g., `font`)
+3. Element default (e.g., `DEFAULT_CONFIG.number.font`)
+
+**Example:**
+```YAML
+# Set Rubik font for all text elements
+type: custom:large-display-card
+entity_id: sensor.temperature
+font: "Rubik"
+color: "#00BCD4"
+font_weight: "normal"
+title:
+  display: true
+  text: "Temperature"
+  font_weight: "bold"  # Only title is bold
+number:
+  size: 64
+  color: "#FFFFFF"  # Only number is white
+subtitle:
+  display: true
+  text: "Living Room"
+  # Uses root font (Rubik) and color (#00BCD4)
 ```
 
 #### Card Background Configuration
@@ -174,6 +222,91 @@ entity_id: sensor.humidity
 - If the entity state changes but the displayed value remains the same, no animation occurs
 - Each animation completes in 0.3 seconds (300ms)
 
+#### Title and Subtitle Configuration
+
+The card supports displaying additional text above (title) and below (subtitle) the main value. Both can be configured to display static text, entity attributes, or Home Assistant templates.
+
+**Configuration Options:**
+
+Title and subtitle support the same configuration structure with the following properties:
+- `display` - Boolean to show/hide the title or subtitle (default: `false`)
+- `text` - Static text or Home Assistant template to display
+- `attribute` - Entity attribute name to display (used when `text` is not provided)
+- `size` - Font size in pixels (default: `'16'`)
+- `color` - CSS color (default: `'#FFFFFF'`)
+- `font_weight` - Font weight (default: `'normal'`)
+- `font` - Font family (default: `'Home Assistant'`)
+
+**Priority:** If both `text` and `attribute` are configured, `text` takes precedence.
+
+**Usage Examples:**
+
+```YAML
+# Static title and subtitle
+type: custom:large-display-card
+entity_id: sensor.temperature
+title:
+  display: true
+  text: "Living Room"
+  size: 18
+  color: "#4CAF50"
+subtitle:
+  display: true
+  text: "Current Temperature"
+  size: 14
+  color: "#2196F3"
+```
+
+```YAML
+# Display entity attributes as title and subtitle
+type: custom:large-display-card
+entity_id: sensor.power_consumption
+title:
+  display: true
+  attribute: friendly_name
+  size: 16
+subtitle:
+  display: true
+  attribute: device_class
+  size: 14
+```
+
+```YAML
+# Template-based title and subtitle (dynamic based on state)
+type: custom:large-display-card
+entity_id: sensor.temperature
+title:
+  display: true
+  text: >
+    {% if states('sensor.temperature') | float > 25 %}
+      Hot 🔥
+    {% else %}
+      Cool ❄️
+    {% endif %}
+  size: 20
+  color: >
+    {% if states('sensor.temperature') | float > 25 %}
+      #FF5722
+    {% else %}
+      #2196F3
+    {% endif %}
+subtitle:
+  display: true
+  text: "{{ now().strftime('%H:%M') }}"
+  size: 14
+```
+
+```YAML
+# Title only (no subtitle)
+type: custom:large-display-card
+text: "42"
+title:
+  display: true
+  text: "Answer to Everything"
+  font: "Rubik"
+  size: 20
+```
+
 **Configuration Options:**
 
 **Configuration Options:**
@@ -185,20 +318,40 @@ Below are all supported configuration keys, their types, defaults (from `src/con
 | `entity_id` | string | `''` | (Optional) The entity whose state/value will be displayed. If empty, set `text` to display a static value. |
 | `text` | string | `''` | (Optional) Static text to display instead of reading from an entity. Useful for labels or fixed values. |
 | `animation` | string|null | `null` | Animation type for value changes. Supported values: `none` (or omit), `fade`, `slide-horizontal`, `slide-vertical`, `zoom`. `null` (default) means no animation. |
+| `font` | string | `'Home Assistant'` | Global font family for all text elements. Overridden by element-specific `font` properties. |
+| `color` | string | `'#FFFFFF'` | Global color for all text elements. Overridden by element-specific `color` properties. |
+| `font_weight` | string|number|null | `null` | Global font weight for all text elements. Overridden by element-specific `font_weight` properties. |
+| `size` | string|number|null | `null` | Global font size for all text elements. Overridden by element-specific `size` properties. |
 | `number` | object | see nested defaults | Controls the main numeric value rendering (size, color, font, decimals, weight). |
-| `number.size` | string|number | `'48'` | Font size for the number. Can be provided as a number or string (e.g. `48` or `'48'`). |
-| `number.color` | string | `'#FFFFFF'` | CSS color used for the number text. Accepts hex, rgb(a), named colors, or templated values. |
-| `number.font_weight` | string|number | `'bold'` | Font weight for the number text (e.g. `normal`, `bold`, `700`). |
+| `number.size` | string|number | `'48'` | Font size for the number. Can be provided as a number or string (e.g. `48` or `'48'`). Overrides global `size`. |
+| `number.color` | string|null | `null` | CSS color used for the number text. Falls back to global `color` if not set. |
+| `number.font_weight` | string|number | `'bold'` | Font weight for the number text (e.g. `normal`, `bold`, `700`). Overrides global `font_weight`. |
 | `number.decimals` | number | `1` | Number of decimal places to display (used when formatting numeric entity states). |
-| `number.font` | string | `'Home Assistant'` | Font family for the number. Predefined fonts are listed in the README; custom/system fonts are allowed. |
+| `number.font` | string|null | `null` | Font family for the number. Falls back to global `font` if not set. |
 | `unit_of_measurement` | object | see nested defaults | Controls rendering of the unit/measurement label. |
 | `unit_of_measurement.display` | boolean | `true` | Whether to show the unit of measurement text. |
 | `unit_of_measurement.as_prefix` | boolean | `false` | When true, render the unit before the number (prefix) instead of after (suffix). |
 | `unit_of_measurement.display_text` | string|null | `null` | Override text to use for the unit instead of the entity's unit_of_measurement. Set to `null` to use the entity-provided unit. |
-| `unit_of_measurement.size` | string|number | `'24'` | Font size for the unit text. Can be number or string. |
-| `unit_of_measurement.color` | string | `'#FFFFFF'` | CSS color for the unit text. |
-| `unit_of_measurement.font_weight` | string|number | `'normal'` | Font weight for the unit text. |
-| `unit_of_measurement.font` | string | `'Home Assistant'` | Font family for the unit text. |
+| `unit_of_measurement.size` | string|number | `'24'` | Font size for the unit text. Can be number or string. Overrides global `size`. |
+| `unit_of_measurement.color` | string|null | `null` | CSS color for the unit text. Falls back to global `color` if not set. |
+| `unit_of_measurement.font_weight` | string|number | `'normal'` | Font weight for the unit text. Overrides global `font_weight`. |
+| `unit_of_measurement.font` | string|null | `null` | Font family for the unit text. Falls back to global `font` if not set. |
+| `title` | object | see nested defaults | Controls rendering of optional title text above the main value. |
+| `title.display` | boolean | `false` | Whether to show the title text. |
+| `title.text` | string|null | `null` | Static text or Home Assistant template to display. Takes precedence over `attribute`. |
+| `title.attribute` | string|null | `null` | Entity attribute name to display (e.g., `friendly_name`). Used when `text` is not provided. |
+| `title.size` | string|number | `'16'` | Font size for the title text. Overrides global `size`. |
+| `title.color` | string|null | `null` | CSS color for the title text. Falls back to global `color` if not set. |
+| `title.font_weight` | string|number | `'normal'` | Font weight for the title text. Overrides global `font_weight`. |
+| `title.font` | string|null | `null` | Font family for the title text. Falls back to global `font` if not set. |
+| `subtitle` | object | see nested defaults | Controls rendering of optional subtitle text below the main value. |
+| `subtitle.display` | boolean | `false` | Whether to show the subtitle text. |
+| `subtitle.text` | string|null | `null` | Static text or Home Assistant template to display. Takes precedence over `attribute`. |
+| `subtitle.attribute` | string|null | `null` | Entity attribute name to display (e.g., `device_class`). Used when `text` is not provided. |
+| `subtitle.size` | string|number | `'16'` | Font size for the subtitle text. Overrides global `size`. |
+| `subtitle.color` | string|null | `null` | CSS color for the subtitle text. Falls back to global `color` if not set. |
+| `subtitle.font_weight` | string|number | `'normal'` | Font weight for the subtitle text. Overrides global `font_weight`. |
+| `subtitle.font` | string|null | `null` | Font family for the subtitle text. Falls back to global `font` if not set. |
 | `card` | object | `{ color: null, background: null }` | Card-level styling options. See "Card Background Configuration" above for usage. |
 | `card.color` | string|null | `null` | Legacy single-color value used when `card.background` is not provided. Accepts any CSS color or template. |
 | `card.background` | string|null | `null` | Preferred background option. Any valid CSS background value is accepted (colors, gradients). Supports Home Assistant template syntax. |

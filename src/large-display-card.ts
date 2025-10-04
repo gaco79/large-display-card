@@ -147,8 +147,10 @@ class LargeDisplayCard extends HTMLElement {
     }
   }
 
+  /**
+   * Store hass internally and re-render when it changes
+   */
   set hass(hass) {
-    // store hass internally and re-render when it changes
     this._hass = hass;
     this.updateContent();
   }
@@ -159,6 +161,8 @@ class LargeDisplayCard extends HTMLElement {
   private computeDisplayTexts() {
     let state_display_text = '0';
     let unit_of_measurement_text = '';
+    let title_text = '';
+    let subtitle_text = '';
 
     const hasEntityId = this.config && this.config.entity_id;
     const hassStates = this._hass && this._hass.states;
@@ -190,6 +194,32 @@ class LargeDisplayCard extends HTMLElement {
         } else if (stateObj.attributes && stateObj.attributes.unit_of_measurement) {
           unit_of_measurement_text = stateObj.attributes.unit_of_measurement;
         }
+
+        // title: prefer explicit text, then attribute, then empty
+        const cfgTitleText = this?.shadowConfig?.title?.text ?? this?.config?.title?.text;
+        const cfgTitleAttr = this?.config?.title?.attribute;
+        if (cfgTitleText !== null && cfgTitleText !== undefined) {
+          title_text = String(cfgTitleText);
+        } else if (
+          cfgTitleAttr &&
+          stateObj.attributes &&
+          stateObj.attributes[cfgTitleAttr] !== undefined
+        ) {
+          title_text = String(stateObj.attributes[cfgTitleAttr]);
+        }
+
+        // subtitle: prefer explicit text, then attribute, then empty
+        const cfgSubtitleText = this?.shadowConfig?.subtitle?.text ?? this?.config?.subtitle?.text;
+        const cfgSubtitleAttr = this?.config?.subtitle?.attribute;
+        if (cfgSubtitleText !== null && cfgSubtitleText !== undefined) {
+          subtitle_text = String(cfgSubtitleText);
+        } else if (
+          cfgSubtitleAttr &&
+          stateObj.attributes &&
+          stateObj.attributes[cfgSubtitleAttr] !== undefined
+        ) {
+          subtitle_text = String(stateObj.attributes[cfgSubtitleAttr]);
+        }
       } else {
         state_display_text = 'unknown';
       }
@@ -207,57 +237,132 @@ class LargeDisplayCard extends HTMLElement {
       if (cfgUnitText != null) {
         unit_of_measurement_text = String(cfgUnitText);
       }
+
+      // title and subtitle: use static text if provided
+      const cfgTitleText = this?.shadowConfig?.title?.text ?? this?.config?.title?.text;
+      if (cfgTitleText !== null && cfgTitleText !== undefined) {
+        title_text = String(cfgTitleText);
+      }
+
+      const cfgSubtitleText = this?.shadowConfig?.subtitle?.text ?? this?.config?.subtitle?.text;
+      if (cfgSubtitleText !== null && cfgSubtitleText !== undefined) {
+        subtitle_text = String(cfgSubtitleText);
+      }
     }
 
-    return { state_display_text, unit_of_measurement_text };
+    return { state_display_text, unit_of_measurement_text, title_text, subtitle_text };
   }
 
   /**
-   * If card.background is a template, render it via hass.callApi and update shadowConfig.
+   * If card.background, title.text, or subtitle.text is a template, render it via hass.callApi and update shadowConfig.
    */
-  private async applyCardTemplateColor() {
-    // ensure config/card present
-    if (!this.config || !this.config.card) return;
+  private async applyTemplates() {
+    if (!this.config) return;
 
     // ensure shadowConfig exists (clone of this.config)
     if (!this.shadowConfig) {
       this.shadowConfig = this.deepMerge({}, this.config);
-    } else {
-      // keep shadowConfig keys for card initialized
-      this.shadowConfig.card = this.shadowConfig.card || {};
     }
 
-    const cardCfg = this.config.card || {};
-    const keys = ['background'];
+    // Apply card.background template
+    if (this.config.card) {
+      this.shadowConfig.card = this.shadowConfig.card || {};
+      const cardCfg = this.config.card || {};
+      const keys = ['background'];
 
-    for (const key of keys) {
-      const tpl = cardCfg[key];
-      // if no value, ensure shadow has something sensible
-      if (!tpl && this.shadowConfig.card[key]) continue;
+      for (const key of keys) {
+        const tpl = cardCfg[key];
+        // if no value, ensure shadow has something sensible
+        if (!tpl && this.shadowConfig.card[key]) continue;
 
-      if (typeof tpl === 'string' && (tpl.includes('{{') || tpl.includes('{%'))) {
-        if (this._hass && typeof this._hass.callApi === 'function') {
-          try {
-            const rendered: string = await this._hass.callApi('POST', 'template', {
-              template: tpl,
-            });
-            if (typeof rendered === 'string' && rendered.trim() !== '') {
-              this.shadowConfig.card[key] = rendered.trim();
-            } else {
-              // fallback to previous shadow value or original template text
+        if (typeof tpl === 'string' && (tpl.includes('{{') || tpl.includes('{%'))) {
+          if (this._hass && typeof this._hass.callApi === 'function') {
+            try {
+              const rendered: string = await this._hass.callApi('POST', 'template', {
+                template: tpl,
+              });
+              if (typeof rendered === 'string' && rendered.trim() !== '') {
+                this.shadowConfig.card[key] = rendered.trim();
+              } else {
+                // fallback to previous shadow value or original template text
+                this.shadowConfig.card[key] = this.shadowConfig.card[key] || tpl;
+              }
+            } catch (err) {
+              console.warn(`large-display-card: template render failed for card.${key}`, err);
               this.shadowConfig.card[key] = this.shadowConfig.card[key] || tpl;
             }
-          } catch (err) {
-            console.warn(`large-display-card: template render failed for card.${key}`, err);
+          } else {
+            // no hass.callApi available yet; keep previous shadow or raw template
             this.shadowConfig.card[key] = this.shadowConfig.card[key] || tpl;
           }
         } else {
-          // no hass.callApi available yet; keep previous shadow or raw template
-          this.shadowConfig.card[key] = this.shadowConfig.card[key] || tpl;
+          // static value: copy into shadow so background can use it uniformly
+          this.shadowConfig.card[key] = tpl;
+        }
+      }
+    }
+
+    // Apply title.text template
+    if (this.config.title) {
+      this.shadowConfig.title = this.shadowConfig.title || {};
+      const titleText = this.config.title.text;
+
+      if (
+        titleText &&
+        typeof titleText === 'string' &&
+        (titleText.includes('{{') || titleText.includes('{%'))
+      ) {
+        if (this._hass && typeof this._hass.callApi === 'function') {
+          try {
+            const rendered: string = await this._hass.callApi('POST', 'template', {
+              template: titleText,
+            });
+            if (typeof rendered === 'string') {
+              this.shadowConfig.title.text = rendered;
+            } else {
+              this.shadowConfig.title.text = this.shadowConfig.title.text || titleText;
+            }
+          } catch (err) {
+            console.warn('large-display-card: template render failed for title.text', err);
+            this.shadowConfig.title.text = this.shadowConfig.title.text || titleText;
+          }
+        } else {
+          this.shadowConfig.title.text = this.shadowConfig.title.text || titleText;
         }
       } else {
-        // static value: copy into shadow so background can use it uniformly
-        this.shadowConfig.card[key] = tpl;
+        this.shadowConfig.title.text = titleText;
+      }
+    }
+
+    // Apply subtitle.text template
+    if (this.config.subtitle) {
+      this.shadowConfig.subtitle = this.shadowConfig.subtitle || {};
+      const subtitleText = this.config.subtitle.text;
+
+      if (
+        subtitleText &&
+        typeof subtitleText === 'string' &&
+        (subtitleText.includes('{{') || subtitleText.includes('{%'))
+      ) {
+        if (this._hass && typeof this._hass.callApi === 'function') {
+          try {
+            const rendered: string = await this._hass.callApi('POST', 'template', {
+              template: subtitleText,
+            });
+            if (typeof rendered === 'string') {
+              this.shadowConfig.subtitle.text = rendered;
+            } else {
+              this.shadowConfig.subtitle.text = this.shadowConfig.subtitle.text || subtitleText;
+            }
+          } catch (err) {
+            console.warn('large-display-card: template render failed for subtitle.text', err);
+            this.shadowConfig.subtitle.text = this.shadowConfig.subtitle.text || subtitleText;
+          }
+        } else {
+          this.shadowConfig.subtitle.text = this.shadowConfig.subtitle.text || subtitleText;
+        }
+      } else {
+        this.shadowConfig.subtitle.text = subtitleText;
       }
     }
 
@@ -274,21 +379,42 @@ class LargeDisplayCard extends HTMLElement {
     this.card = document.createElement('ha-card');
 
     this.card.style.display = 'flex';
+    this.card.style.flexDirection = 'column';
     this.card.style.justifyContent = 'center';
     this.card.style.alignItems = 'center';
     this.card.style.padding = '16px';
     this.card.style.color = 'white';
 
+    // Create title container
+    const titleContainer = document.createElement('div');
+    titleContainer.id = 'title-container';
+    titleContainer.style.display = 'flex';
+    titleContainer.style.justifyContent = 'center';
+    titleContainer.style.alignItems = 'center';
+    titleContainer.style.width = '100%';
+
+    // Create number container (horizontal layout for number and unit)
     const numberBox = document.createElement('div');
     numberBox.style.display = 'flex';
     numberBox.style.flexDirection = 'row';
     numberBox.style.justifyContent = 'center';
     numberBox.style.alignItems = 'center';
-    numberBox.style.margin = '16px';
+    numberBox.style.lineHeight = '1';
+
+    // Create subtitle container
+    const subtitleContainer = document.createElement('div');
+    subtitleContainer.id = 'subtitle-container';
+    subtitleContainer.style.display = 'flex';
+    subtitleContainer.style.justifyContent = 'center';
+    subtitleContainer.style.alignItems = 'center';
+    subtitleContainer.style.width = '100%';
 
     this.numberEl = numberBox;
 
+    this.card.appendChild(titleContainer);
     this.card.appendChild(numberBox);
+    this.card.appendChild(subtitleContainer);
+
     if (this.shadowRoot) {
       this.shadowRoot.appendChild(this.card);
     }
@@ -297,16 +423,17 @@ class LargeDisplayCard extends HTMLElement {
   }
 
   async updateContent() {
-    // compute display text from hass + config
-    const { state_display_text, unit_of_measurement_text } = this.computeDisplayTexts();
-
     // Check if we should update (value changed)
     if (!this.shouldUpdate()) {
       return;
     }
 
-    // evaluate templates in card color if needed (may update shadowConfig.card.color)
-    await this.applyCardTemplateColor();
+    // evaluate templates in card color, title, and subtitle if needed
+    await this.applyTemplates();
+
+    // compute display text from hass + config (after templates are applied)
+    const { state_display_text, unit_of_measurement_text, title_text, subtitle_text } =
+      this.computeDisplayTexts();
 
     // create card and number container if this is first render
     this.ensureCard();
@@ -315,6 +442,9 @@ class LargeDisplayCard extends HTMLElement {
     if (this.numberEl) {
       this.updateNumberDisplay(state_display_text, unit_of_measurement_text);
     }
+
+    // update title and subtitle
+    this.updateTitleAndSubtitle(title_text, subtitle_text);
   }
 
   /**
@@ -379,7 +509,7 @@ class LargeDisplayCard extends HTMLElement {
     }
 
     // Load fonts if needed
-    const numberFontFamily = cfgNumber.font || DEFAULT_CONFIG.number.font;
+    const numberFontFamily = cfgNumber.font ?? cfg.font ?? DEFAULT_CONFIG.number.font ?? DEFAULT_CONFIG.font;
     this.loadFont(numberFontFamily);
 
     // ensure number span
@@ -406,9 +536,10 @@ class LargeDisplayCard extends HTMLElement {
     // Update previous value
     this.previousDisplayValue = state_display_text;
 
-    number.style.fontSize = (cfgNumber.size ?? DEFAULT_CONFIG.number.size) + 'px';
-    number.style.fontWeight = cfgNumber.font_weight ?? DEFAULT_CONFIG.number.font_weight;
-    number.style.color = cfgNumber.color ?? DEFAULT_CONFIG.number.color;
+    number.style.fontSize = (cfgNumber.size ?? cfg.size ?? DEFAULT_CONFIG.number.size) + 'px';
+    number.style.fontWeight =
+      cfgNumber.font_weight ?? cfg.font_weight ?? DEFAULT_CONFIG.number.font_weight;
+    number.style.color = cfgNumber.color ?? cfg.color ?? DEFAULT_CONFIG.color;
     number.style.fontFamily =
       numberFontFamily === 'Home Assistant'
         ? 'var(--ha-card-header-font-family, inherit)'
@@ -422,7 +553,7 @@ class LargeDisplayCard extends HTMLElement {
     // handle unit if displayed (guard in case unit_of_measurement is missing or null)
     if (uomCfg && uomCfg.display) {
       // Load font for unit if different from number font
-      const unitFontFamily = uomCfg.font || DEFAULT_CONFIG.unit_of_measurement.font;
+      const unitFontFamily = uomCfg.font ?? cfg.font ?? DEFAULT_CONFIG.unit_of_measurement.font ?? DEFAULT_CONFIG.font;
       this.loadFont(unitFontFamily);
 
       let unit_of_measurement_element = this.numberEl.querySelector('span#unit_of_measurement');
@@ -434,11 +565,10 @@ class LargeDisplayCard extends HTMLElement {
 
       unit_of_measurement_element.textContent = unit_of_measurement_text;
       unit_of_measurement_element.style.fontSize =
-        (uomCfg.size ?? DEFAULT_CONFIG.unit_of_measurement.size) + 'px';
+        (uomCfg.size ?? cfg.size ?? DEFAULT_CONFIG.unit_of_measurement.size) + 'px';
       unit_of_measurement_element.style.fontWeight =
-        uomCfg.font_weight ?? DEFAULT_CONFIG.unit_of_measurement.font_weight;
-      unit_of_measurement_element.style.color =
-        uomCfg.color ?? DEFAULT_CONFIG.unit_of_measurement.color;
+        uomCfg.font_weight ?? cfg.font_weight ?? DEFAULT_CONFIG.unit_of_measurement.font_weight;
+      unit_of_measurement_element.style.color = uomCfg.color ?? cfg.color ?? DEFAULT_CONFIG.unit_of_measurement.color ?? DEFAULT_CONFIG.color;
       unit_of_measurement_element.style.fontFamily =
         unitFontFamily === 'Home Assistant'
           ? 'var(--ha-card-header-font-family, inherit)'
@@ -461,6 +591,78 @@ class LargeDisplayCard extends HTMLElement {
       this.numberEl.style.flexDirection = 'row-reverse';
     } else {
       this.numberEl.style.flexDirection = 'row';
+    }
+  }
+
+  /**
+   * Update title and subtitle elements
+   */
+  updateTitleAndSubtitle(title_text: string, subtitle_text: string) {
+    const cfg = this.config || DEFAULT_CONFIG;
+    const titleCfg = cfg && cfg.title ? cfg.title : DEFAULT_CONFIG.title;
+    const subtitleCfg = cfg && cfg.subtitle ? cfg.subtitle : DEFAULT_CONFIG.subtitle;
+
+    // Update title
+    const titleContainer = this.card?.querySelector('#title-container');
+    if (titleContainer && titleCfg && titleCfg.display && title_text) {
+      // Load font for title
+      const titleFontFamily = titleCfg.font ?? cfg.font ?? DEFAULT_CONFIG.font;
+      this.loadFont(titleFontFamily);
+
+      let titleElement = titleContainer.querySelector('span#title');
+      if (!titleElement) {
+        titleElement = document.createElement('span');
+        titleElement.id = 'title';
+        titleContainer.appendChild(titleElement);
+      }
+
+      titleElement.textContent = title_text;
+      titleElement.style.fontSize = (titleCfg.size ?? cfg.size ?? DEFAULT_CONFIG.title.size) + 'px';
+      titleElement.style.fontWeight =
+        titleCfg.font_weight ?? cfg.font_weight ?? DEFAULT_CONFIG.title.font_weight;
+      titleElement.style.color = titleCfg.color ?? cfg.color ?? DEFAULT_CONFIG.color;
+      titleElement.style.fontFamily =
+        titleFontFamily === 'Home Assistant'
+          ? 'var(--ha-card-header-font-family, inherit)'
+          : titleFontFamily;
+    } else if (titleContainer) {
+      // Remove title element if not displayed
+      const existingTitle = titleContainer.querySelector('span#title');
+      if (existingTitle && existingTitle.parentElement) {
+        existingTitle.parentElement.removeChild(existingTitle);
+      }
+    }
+
+    // Update subtitle
+    const subtitleContainer = this.card?.querySelector('#subtitle-container');
+    if (subtitleContainer && subtitleCfg && subtitleCfg.display && subtitle_text) {
+      // Load font for subtitle
+      const subtitleFontFamily = subtitleCfg.font ?? cfg.font ?? DEFAULT_CONFIG.font;
+      this.loadFont(subtitleFontFamily);
+
+      let subtitleElement = subtitleContainer.querySelector('span#subtitle');
+      if (!subtitleElement) {
+        subtitleElement = document.createElement('span');
+        subtitleElement.id = 'subtitle';
+        subtitleContainer.appendChild(subtitleElement);
+      }
+
+      subtitleElement.textContent = subtitle_text;
+      subtitleElement.style.fontSize =
+        (subtitleCfg.size ?? cfg.size ?? DEFAULT_CONFIG.subtitle.size) + 'px';
+      subtitleElement.style.fontWeight =
+        subtitleCfg.font_weight ?? cfg.font_weight ?? DEFAULT_CONFIG.subtitle.font_weight;
+      subtitleElement.style.color = subtitleCfg.color ?? cfg.color ?? DEFAULT_CONFIG.color;
+      subtitleElement.style.fontFamily =
+        subtitleFontFamily === 'Home Assistant'
+          ? 'var(--ha-card-header-font-family, inherit)'
+          : subtitleFontFamily;
+    } else if (subtitleContainer) {
+      // Remove subtitle element if not displayed
+      const existingSubtitle = subtitleContainer.querySelector('span#subtitle');
+      if (existingSubtitle && existingSubtitle.parentElement) {
+        existingSubtitle.parentElement.removeChild(existingSubtitle);
+      }
     }
   }
 
