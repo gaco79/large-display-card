@@ -509,7 +509,7 @@ class LargeDisplayCard extends HTMLElement {
     }
 
     // Load fonts if needed
-    const numberFontFamily = cfgNumber.font ?? cfg.font ?? DEFAULT_CONFIG.font;
+    const numberFontFamily = cfgNumber.font ?? cfg.font ?? DEFAULT_CONFIG.number.font ?? DEFAULT_CONFIG.font;
     this.loadFont(numberFontFamily);
 
     // ensure number span
@@ -553,7 +553,7 @@ class LargeDisplayCard extends HTMLElement {
     // handle unit if displayed (guard in case unit_of_measurement is missing or null)
     if (uomCfg && uomCfg.display) {
       // Load font for unit if different from number font
-      const unitFontFamily = uomCfg.font ?? cfg.font ?? DEFAULT_CONFIG.font;
+      const unitFontFamily = uomCfg.font ?? cfg.font ?? DEFAULT_CONFIG.unit_of_measurement.font ?? DEFAULT_CONFIG.font;
       this.loadFont(unitFontFamily);
 
       let unit_of_measurement_element = this.numberEl.querySelector('span#unit_of_measurement');
@@ -568,7 +568,7 @@ class LargeDisplayCard extends HTMLElement {
         (uomCfg.size ?? cfg.size ?? DEFAULT_CONFIG.unit_of_measurement.size) + 'px';
       unit_of_measurement_element.style.fontWeight =
         uomCfg.font_weight ?? cfg.font_weight ?? DEFAULT_CONFIG.unit_of_measurement.font_weight;
-      unit_of_measurement_element.style.color = uomCfg.color ?? cfg.color ?? DEFAULT_CONFIG.color;
+      unit_of_measurement_element.style.color = uomCfg.color ?? cfg.color ?? DEFAULT_CONFIG.unit_of_measurement.color ?? DEFAULT_CONFIG.color;
       unit_of_measurement_element.style.fontFamily =
         unitFontFamily === 'Home Assistant'
           ? 'var(--ha-card-header-font-family, inherit)'
