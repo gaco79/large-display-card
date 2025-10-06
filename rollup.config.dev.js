@@ -3,6 +3,7 @@ import babel from '@rollup/plugin-babel';
 import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json';
+import livereload from 'rollup-plugin-livereload';
 
 export default {
   input: ['src/large-display-card.ts'],
@@ -18,5 +19,10 @@ export default {
       exclude: 'node_modules/**',
     }),
     terser(),
+    livereload({ watch: 'dist', delay: 300 }),
   ],
+  watch: {
+    chokidar: true,
+    exclude: ['node_modules/**', 'dist/**', '.vscode/**', '.git/**', 'config/**'],
+  }
 };
